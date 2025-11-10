@@ -1,0 +1,31 @@
+{
+	"folders": [
+	  {
+		"path": "."
+	  }
+	],
+	"settings": {
+	  "python.terminal.activateEnvironment": true,
+	  "python.pythonPath": "D:\\WorkSpace\\Python\\spark_toturial\\Scripts\\python.exe",
+	//   "editor.fontFamily": "Fira Code",
+	  "editor.fontSize": 14,
+	  "editor.tabSize": 4,
+	  "python.linting.pylintEnabled": true,
+	  "python.formatting.provider": "black",
+	  "python.formatting.blackArgs": [
+		"--line-length",
+		"128" // chuẩn PEP8 79
+	  ],
+	  "editor.codeActionsOnSave": {
+		"source.organizeImports": "explicit",
+		"source.fixAll.eslint": "explicit"
+	},
+	"python.defaultInterpreterPath": "/opt/homebrew/anaconda3",
+	"jupyter.kernels.excludePythonEnvironments": [
+		"/opt/homebrew/anaconda3"
+	],
+	"azureFunctions.pythonVenv": "/opt/homebrew/anaconda3",
+	"azureFunctions.projectLanguage": "Python",
+	"chatgpt.openOnStartup": true
+	}
+  }
