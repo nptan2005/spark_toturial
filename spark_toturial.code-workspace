@@ -1,31 +1,66 @@
 {
-	"folders": [
-	  {
-		"path": "."
-	  }
-	],
-	"settings": {
-	  "python.terminal.activateEnvironment": true,
-	  "python.pythonPath": "D:\\WorkSpace\\Python\\spark_toturial\\Scripts\\python.exe",
-	//   "editor.fontFamily": "Fira Code",
-	  "editor.fontSize": 14,
-	  "editor.tabSize": 4,
-	  "python.linting.pylintEnabled": true,
-	  "python.formatting.provider": "black",
-	  "python.formatting.blackArgs": [
-		"--line-length",
-		"128" // chuẩn PEP8 79
-	  ],
-	  "editor.codeActionsOnSave": {
-		"source.organizeImports": "explicit",
-		"source.fixAll.eslint": "explicit"
-	},
-	"python.defaultInterpreterPath": "/opt/homebrew/anaconda3",
-	"jupyter.kernels.excludePythonEnvironments": [
-		"/opt/homebrew/anaconda3"
-	],
-	"azureFunctions.pythonVenv": "/opt/homebrew/anaconda3",
-	"azureFunctions.projectLanguage": "Python",
-	"chatgpt.openOnStartup": true
-	}
+  "folders": [
+    { "path": "." }
+  ],
+  "settings": {
+    // ==== PYTHON ENV ====
+    "python.defaultInterpreterPath": "C:\\Users\\tannp\\Anaconda3\\envs\\spark_env\\python.exe",
+    "python.terminal.activateEnvironment": true,
+    "python.condaPath": "C:\\Users\\tannp\\Anaconda3\\Scripts\\conda.exe",
+
+    // ==== EDITOR ====
+    "editor.fontSize": 14,
+    "editor.tabSize": 4,
+    "editor.formatOnSave": true,
+    "python.formatting.provider": "black",
+    "python.formatting.blackArgs": ["--line-length", "120"],
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit",
+      "source.fixAll.eslint": "explicit"
+    },
+
+    // ==== ENV VARIABLES CROSS-PLATFORM ====
+    "terminal.integrated.env.windows": {
+      "CONDA_DEFAULT_ENV": "spark_env",
+      "JAVA_HOME": "D:\\WorkSpace\\Java\\jdk-23.0.2",
+      "SPARK_HOME": "D:\\WorkSpace\\Python\\spark-4.0.1-bin-hadoop3",
+      "HADOOP_HOME": "D:\\WorkSpace\\Python\\spark-4.0.1-bin-hadoop3\\hadoop",
+      "AIRFLOW_HOME": "D:\\WorkSpace\\Python\\spark-airflow-demo",
+      "ATLAS_HOME": "D:\\WorkSpace\\Python\\spark-airflow-demo\\images\\atlas",
+      "RANGER_HOME": "D:\\WorkSpace\\Python\\spark-airflow-demo\\images\\ranger",
+      "PYSPARK_PYTHON": "python",
+      "PYSPARK_DRIVER_PYTHON": "python",
+      "PATH": "C:\\Users\\tannp\\Anaconda3\\envs\\spark_env;C:\\Users\\tannp\\Anaconda3\\envs\\spark_env\\Scripts;D:\\WorkSpace\\Java\\jdk-23.0.2\\bin;D:\\WorkSpace\\Python\\spark-4.0.1-bin-hadoop3\\bin;${env:PATH}"
+    },
+    "terminal.integrated.env.linux": {
+      "CONDA_DEFAULT_ENV": "spark_env",
+      "JAVA_HOME": "/home/${env:USER}/WorkSpace/Java/jdk-23.0.2",
+      "SPARK_HOME": "/home/${env:USER}/WorkSpace/Python/spark-4.0.1-bin-hadoop3",
+      "HADOOP_HOME": "/home/${env:USER}/WorkSpace/Python/spark-4.0.1-bin-hadoop3/hadoop",
+      "AIRFLOW_HOME": "/home/${env:USER}/WorkSpace/Python/spark-airflow-demo",
+      "ATLAS_HOME": "/home/${env:USER}/WorkSpace/Python/spark-airflow-demo/images/atlas",
+      "RANGER_HOME": "/home/${env:USER}/WorkSpace/Python/spark-airflow-demo/images/ranger",
+      "PYSPARK_PYTHON": "python3",
+      "PYSPARK_DRIVER_PYTHON": "python3",
+      "PATH": "/home/${env:USER}/WorkSpace/Java/jdk-23.0.2/bin:/home/${env:USER}/WorkSpace/Python/spark-4.0.1-bin-hadoop3/bin:${env:PATH}"
+    },
+    "terminal.integrated.env.osx": {
+      "CONDA_DEFAULT_ENV": "spark_env",
+      "JAVA_HOME": "/Users/${env:USER}/WorkSpace/Java/jdk-23.0.2",
+      "SPARK_HOME": "/Users/${env:USER}/WorkSpace/Python/spark-4.0.1-bin-hadoop3",
+      "HADOOP_HOME": "/Users/${env:USER}/WorkSpace/Python/spark-4.0.1-bin-hadoop3/hadoop",
+      "AIRFLOW_HOME": "/Users/${env:USER}/WorkSpace/Python/spark-airflow-demo",
+      "ATLAS_HOME": "/Users/${env:USER}/WorkSpace/Python/spark-airflow-demo/images/atlas",
+      "RANGER_HOME": "/Users/${env:USER}/WorkSpace/Python/spark-airflow-demo/images/ranger",
+      "PYSPARK_PYTHON": "python3",
+      "PYSPARK_DRIVER_PYTHON": "python3",
+      "PATH": "/Users/${env:USER}/WorkSpace/Java/jdk-23.0.2/bin:/Users/${env:USER}/WorkSpace/Python/spark-4.0.1-bin-hadoop3/bin:${env:PATH}"
+    },
+
+    // ==== JUPYTER ====
+    "jupyter.kernels.excludePythonEnvironments": [],
+    "notebook.kernelProviderAssociations": {
+      "python": "Python"
+    }
   }
+}

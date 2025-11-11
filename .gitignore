@@ -4,15 +4,12 @@
 .pytest_cache
 # poetry.lock
 # pyproject.toml
-.vscode/*
-Logs/
 cx_Oracle-doc/
 __pycache__/
 *.py[cod]
 *$py.class
 # C extensions
 *.so
-scheduleServiceEnv/
 # Distribution / packaging
 .Python
 build/
@@ -131,8 +128,7 @@ Scripts/
 # Rope project settings
 .ropeproject
 
-# mkdocs documentation
-/site
+
 
 # mypy
 .mypy_cache/
@@ -153,6 +149,9 @@ cython_debug/
 **/.pytest_cache/
 
 # spark environment docker:
+# spark_toturial.code-workspace
+# .vscode/*
+Logs/
 spark_env/__pycache__/*
 spark_env/dags/__pycache__/*
 spark_env/data/minio/*

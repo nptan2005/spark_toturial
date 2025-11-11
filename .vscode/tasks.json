@@ -1,0 +1,53 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Start Spark (Local)",
+      "type": "shell",
+      "command": "${env:SPARK_HOME}/bin/pyspark",
+      "windows": {
+        "command": "${env:SPARK_HOME}\\bin\\pyspark.cmd"
+      },
+      "linux": {
+        "command": "${env:SPARK_HOME}/bin/pyspark"
+      },
+      "osx": {
+        "command": "${env:SPARK_HOME}/bin/pyspark"
+      },
+      "problemMatcher": []
+    },
+
+    {
+      "label": "Start All Containers",
+      "type": "shell",
+      "command": "${command:workbench.action.terminal.sendSequence}",
+      "windows": {
+        "command": "docker-compose -f ${workspaceFolder}\\spark-airflow-demo\\docker-compose.yml up -d && docker start atlas || docker run -d -p 21000:21000 --name atlas local/atlas:2.3.0 && docker start ranger || docker run -d -p 6080:6080 --name ranger local/ranger:2.3.0"
+      },
+      "linux": {
+        "command": "docker-compose -f ${workspaceFolder}/spark-airflow-demo/docker-compose.yml up -d && (docker start atlas || docker run -d -p 21000:21000 --name atlas local/atlas:2.3.0) && (docker start ranger || docker run -d -p 6080:6080 --name ranger local/ranger:2.3.0)"
+      },
+      "osx": {
+        "command": "docker-compose -f ${workspaceFolder}/spark-airflow-demo/docker-compose.yml up -d && (docker start atlas || docker run -d -p 21000:21000 --name atlas local/atlas:2.3.0) && (docker start ranger || docker run -d -p 6080:6080 --name ranger local/ranger:2.3.0)"
+      },
+      "presentation": { "reveal": "always" },
+      "problemMatcher": []
+    },
+
+    {
+      "label": "Stop All Containers",
+      "type": "shell",
+      "windows": {
+        "command": "docker stop atlas ranger || true && docker-compose -f ${workspaceFolder}\\spark-airflow-demo\\docker-compose.yml down"
+      },
+      "linux": {
+        "command": "docker stop atlas ranger || true && docker-compose -f ${workspaceFolder}/spark-airflow-demo/docker-compose.yml down"
+      },
+      "osx": {
+        "command": "docker stop atlas ranger || true && docker-compose -f ${workspaceFolder}/spark-airflow-demo/docker-compose.yml down"
+      },
+      "presentation": { "reveal": "always" },
+      "problemMatcher": []
+    }
+  ]
+}

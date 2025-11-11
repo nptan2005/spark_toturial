@@ -5,13 +5,17 @@ REM ==============================================
 
 CALL conda activate spark_env
 
-SET JAVA_HOME=%CONDA_PREFIX%
-SET PATH=%JAVA_HOME%\bin;%PATH%
-SET PYSPARK_PYTHON=%CONDA_PREFIX%\python.exe
-SET PYSPARK_DRIVER_PYTHON=jupyter
-SET PYSPARK_DRIVER_PYTHON_OPTS="lab"
+@echo off
+echo === Starting Spark Environment ===
+call conda activate spark_env
 
-echo JAVA_HOME=%JAVA_HOME%
-echo Starting Spark 4.0.1 with Python 3.10...
+echo Starting Docker containers...
+docker-compose -f spark-airflow-demo\docker-compose.yml up -d
+docker start atlas || docker run -d -p 21000:21000 --name atlas local/atlas:2.3.0
+docker start ranger || docker run -d -p 6080:6080 --name ranger local/ranger:2.3.0
 
+echo Starting Jupyter Notebook...
+jupyter lab
+echo Jupyter Notebook started.
+echo Starting PySpark Shell...
 pyspark --master local[*]
