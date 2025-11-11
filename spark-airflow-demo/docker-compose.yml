@@ -14,6 +14,11 @@ services:
     environment:
       - SPARK_MODE=master
       - SPARK_PUBLIC_DNS=spark-master
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
     networks:
       - spark-net
 
@@ -27,6 +32,11 @@ services:
       - SPARK_MASTER=spark://spark-master:7077
     ports:
       - "8081:8081"   # Spark Worker Web UI
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
     networks:
       - spark-net
 
@@ -41,59 +51,255 @@ services:
       - "8888:8888"  # JupyterLab Web UI
     volumes:
       - ./data:/home/jovyan/data
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8888"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
     networks:
       - spark-net
-
-  # ------------------- AIRFLOW + POSTGRES -------------------
+  # ------------------- AIRFLOW INFRASTRUCTURE -------------------
+  # ------------------- POSTGRES (Airflow Metadata DB) -------------------
   postgres:
     image: postgres:13
     container_name: postgres
     environment:
-      POSTGRES_USER: airflow
-      POSTGRES_PASSWORD: airflow
-      POSTGRES_DB: airflow
+      POSTGRES_USER: ${AIRFLOW_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${AIRFLOW_POSTGRES_PASSWORD}
+      POSTGRES_DB: ${AIRFLOW_POSTGRES_DB}
     ports:
       - "5432:5432"
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${AIRFLOW_POSTGRES_USER}"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
     networks:
       - spark-net
-
-  airflow:
-    image: apache/airflow:2.10.5-python3.12
-    container_name: airflow
-    environment:
-      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
-      - AIRFLOW__CORE__FERNET_KEY=C1Cg8QaV6rUzSZlQ9OCAFHVv-IWMBQuSvnfcMfnuEAg=
-      - AIRFLOW__CORE__LOAD_EXAMPLES=False
-      - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=True
+  # ------------------- REDIS (Airflow Celery Broker) -------------------
+  redis:
+    image: redis:latest
+    container_name: airflow-redis
+    mem_limit: ${REDIS_MEM}
+    cpus: ${REDIS_CPU}
     ports:
-      - "8082:8080"  # Airflow Web UI
+      - "6379:6379"
+    networks:
+      - spark-net # Đã sửa: Dùng mạng chung spark-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 30s
+      retries: 50
+    restart: always
+  # ------------------- AIRFLOW CORE SERVICES -------------------
+  # ------------------- AIRFLOW INIT (Khởi tạo DB và User) -------------------
+  airflow-init:
+    image: ${AIRFLOW_IMAGE_NAME}
+    container_name: airflow-init
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        airflow db migrate && \
+        airflow users create \
+          --username ${_AIRFLOW_WWW_USER_USERNAME} \
+          --password ${_AIRFLOW_WWW_USER_PASSWORD} \
+          --firstname ${_AIRFLOW_WWW_USER_FIRSTNAME} \
+          --lastname ${_AIRFLOW_WWW_USER_LASTNAME} \
+          --role ${_AIRFLOW_WWW_USER_ROLE} \
+          --email ${_AIRFLOW_WWW_USER_EMAIL} || true
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=${EXECUTOR}
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${AIRFLOW_POSTGRES_USER}:${AIRFLOW_POSTGRES_PASSWORD}@postgres/${AIRFLOW_POSTGRES_DB}
+      - AIRFLOW__CORE__FERNET_KEY=${FERNET_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
     volumes:
       - ./dags:/opt/airflow/dags
       - ./logs:/opt/airflow/logs
       - ./plugins:/opt/airflow/plugins
-    depends_on:
-      - postgres
     networks:
       - spark-net
+    deploy:
+      resources:
+        limits:
+          cpus: "${AIRFLOW_INIT_CPU}"
+          memory: "${AIRFLOW_INIT_MEM}"
 
-  # ------------------- MINIO -------------------
+  # ------------------- AIRFLOW -------------------
+  airflow:
+    image: ${AIRFLOW_IMAGE_NAME}
+    container_name: ${AIRFLOW_CONTAINER_NAME}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      spark-master:
+        condition: service_healthy
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=${EXECUTOR}
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${AIRFLOW_POSTGRES_USER}:${AIRFLOW_POSTGRES_PASSWORD}@postgres/${AIRFLOW_POSTGRES_DB}
+      - AIRFLOW__CORE__FERNET_KEY=${FERNET_KEY}
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=True
+    ports:
+      - "8082:8080"
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - spark-net
+    env_file:
+      - .env
+  # ------------------- AIRFLOW WEBSERVER -------------------
+  airflow-webserver:
+    image: ${AIRFLOW_IMAGE_NAME}
+    container_name: airflow-webserver
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=${EXECUTOR}
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${AIRFLOW_POSTGRES_USER}:${AIRFLOW_POSTGRES_PASSWORD}@postgres/${AIRFLOW_POSTGRES_DB}
+      - AIRFLOW__CORE__FERNET_KEY=${FERNET_KEY}
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=True
+    command: webserver
+    ports:
+      - "8082:8080" # Airflow Web UI
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - spark-net
+    env_file:
+      - .env
+  # ------------------- AIRFLOW SCHEDULER -------------------
+  airflow-scheduler:
+    image: ${AIRFLOW_IMAGE_NAME}
+    container_name: airflow-scheduler
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=${EXECUTOR}
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${AIRFLOW_POSTGRES_USER}:${AIRFLOW_POSTGRES_PASSWORD}@postgres/${AIRFLOW_POSTGRES_DB}
+      - AIRFLOW__CORE__FERNET_KEY=${FERNET_KEY}
+    command: scheduler
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+    networks:
+      - spark-net
+    env_file:
+      - .env
+
+  # ------------------- AIRFLOW DAG PROCESSOR -------------------
+  airflow-dag-processor:
+    image: ${AIRFLOW_IMAGE_NAME}
+    container_name: airflow-dag-processor
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=${EXECUTOR}
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${AIRFLOW_POSTGRES_USER}:${AIRFLOW_POSTGRES_PASSWORD}@postgres/${AIRFLOW_POSTGRES_DB}
+      - AIRFLOW__CORE__FERNET_KEY=${FERNET_KEY}
+    command: dag-processor
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'airflow jobs check --job-type DagProcessorJob --hostname "$${HOSTNAME}"',
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+    networks:
+      - spark-net
+    env_file:
+      - .env
+
+  # ------------------- FLOWER (Airflow Celery Monitor) -------------------
+  flower:
+    image: ${AIRFLOW_IMAGE_NAME}
+    container_name: airflow-flower
+    mem_limit: ${AIRFLOW_FLOWER_MEM}
+    cpus: ${AIRFLOW_FLOWER_CPU}
+    command: celery flower
+    networks:
+      - spark-net # **Đã sửa: Dùng mạng chung spark-net**
+    ports:
+      - 5555:5555
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:5555/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+
+  # ------------------- MINIO (S3-compatible Storage)  -------------------
   minio:
     image: minio/minio
     container_name: minio
     command: server /data --console-address ":9001"
     environment:
-      - MINIO_ROOT_USER=admin
-      - MINIO_ROOT_PASSWORD=admin123
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "9000:9000" # MinIO API
+      - "9001:9001" # MinIO Console Web UI
     volumes:
       - ./data/minio:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/ready"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
     networks:
       - spark-net
+    env_file:
+      - .env
 
   # ------------------- KAFKA / ZOOKEEPER -------------------
   zookeeper:
@@ -104,6 +310,11 @@ services:
       - ALLOW_ANONYMOUS_LOGIN=yes
     ports:
       - "2181:2181"
+    healthcheck:
+      test: ["CMD", "echo", "ruok", "|", "nc", "localhost", "2181"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
     networks:
       - spark-net
 
@@ -112,13 +323,19 @@ services:
     platform: linux/amd64
     container_name: kafka
     depends_on:
-      - zookeeper
+      zookeeper:
+        condition: service_healthy
     ports:
       - "9092:9092"
     environment:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "9092"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
     networks:
       - spark-net
 
@@ -128,8 +345,8 @@ services:
     platform: linux/amd64
     container_name: keycloak
     environment:
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: admin
+      - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN}
+      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
     ports:
       - "8085:8080"
     volumes:
@@ -138,6 +355,11 @@ services:
       - "/opt/keycloak/bin/kc.sh"
       - "start-dev"
       - "--import-realm"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
     networks:
       - spark-net
 
@@ -157,8 +379,15 @@ services:
     ports:
       - "8084:4180"
     depends_on:
-      - keycloak
-      - spark-master
+      keycloak:
+        condition: service_healthy
+      spark-master:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4180"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
     networks:
       - spark-net
 
@@ -197,13 +426,40 @@ services:
     image: local/token-service:latest
     container_name: token-service
     environment:
-      - PORT=5000
+      - PORT=${TOKEN_SERVICE_PORT}
     ports:
       - "5001:5000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
     networks:
       - spark-net
+   # ------------------- PROXY EXTERNAL HOST ACCESS (NGINX) -------------------
+  access-host-proxy:
+    image: nginx:latest
+    container_name: access-host-proxy
+    mem_limit: ${NGINX_MEM}
+    cpus: ${NGINX_CPU}
+    # REMOVED: network_mode: host
+    ports:
+      - "5432:5432" # Expose PostgreSQL proxy port
+      - "1521:1521" # Expose Oracle proxy port
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl
+    networks:
+      - spark-net # Quan trọng: Phải thuộc mạng chung để dùng tên dịch vụ
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: always
+    env_file:             
+      - .env
 
 # ------------------- NETWORK -------------------
+
 networks:
   spark-net:
     driver: bridge

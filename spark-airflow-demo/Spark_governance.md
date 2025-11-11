@@ -1401,5 +1401,56 @@ keycloak:
 * Keycloak public image còn dùng được.
 * Khi build xong, docker-compose sẽ chạy full stack.
 
+```yaml
+access-host-proxy:
+    image: nginx:latest
+    container_name: access-host-proxy
+    mem_limit: ${NGINX_MEM}
+    cpus: ${NGINX_CPU}
+    # REMOVED: network_mode: host
+    ports:
+      - "5432:5432" # Expose PostgreSQL proxy port
+      - "1521:1521" # Expose Oracle proxy port
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl
+    networks:
+      - spark-net # Quan trọng: Phải thuộc mạng chung để dùng tên dịch vụ
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: always
+```
+### B. Dịch vụ Airflow (`flower`, `redis`, `dag-processor`)
 
+| Dịch vụ | Vấn đề/Điều chỉnh | Lý do |
+| :--- | :--- | :--- |
+| **Network Name** | Dịch vụ đang sử dụng `airflow-network`. | **Phải hợp nhất!** Tất cả các dịch vụ (Spark, Kafka, MinIO, Airflow) nên sử dụng một mạng chung, ví dụ: **`spark-net`**, để Airflow có thể gọi Spark Submit hoặc Kafka Producer/Consumer. |
+| **`flower`** | Cấu hình tốt, sử dụng `service_completed_successfully` cho `airflow-init`. | Đảm bảo đổi `airflow-network` thành `spark-net`. |
+| **`redis`** | Cấu hình tốt. | Đảm bảo đổi `airflow-network` thành `spark-net`. |
+| **`airflow-dag-processor`** | Cần đảm bảo rằng `airflow-common-depends-on` bao gồm cả `redis` và `postgres` healthy trước khi khởi động. | `dag-processor` cần DB (Postgres) và Broker (Redis) hoạt động. |
+
+### C. Bổ sung Dịch vụ Airflow (Để có "Full Stack")
+
+Mô hình Airflow của bạn đang thiếu hai dịch vụ bắt buộc để hoạt động:
+
+1.  **`airflow-webserver`**: Cung cấp giao diện Web UI (đã có port 8082:8080 trong dịch vụ `airflow` ở phần trước, nhưng cần tách ra).
+2.  **`airflow-scheduler`**: Lập lịch và kiểm tra trạng thái DAGs.
+
+Bạn nên tách dịch vụ `airflow` (Web UI/Scheduler) thành các thành phần riêng biệt nếu bạn đang sử dụng `LocalExecutor` hoặc `CeleryExecutor` (như Flower chỉ ra).
+
+---
+
+## 3. Cấu hình Cập nhật (Mô phỏng)
+
+Tôi giả định bạn muốn dùng **`spark-net`** làm mạng chung.
+
+
+http://googleusercontent.com/immersive_entry_chip/1
+
+### Tóm tắt các điều chỉnh chính:
+
+1.  **Sửa `nginx.conf`**: Thay thế các IP cứng bằng tên dịch vụ (`postgres`, `oracle-db`).
+2.  **Hợp nhất Network**: Đã đổi tất cả các dịch vụ liên quan đến Airflow/Redis từ `airflow-network` sang **`spark-net`** để đơn giản hóa giao tiếp với Spark, Kafka, và MinIO.
+3.  **Tách Airflow**: Đã tách Airflow thành `airflow-webserver` và `airflow-scheduler` (và đổi tên dịch vụ Airflow cũ thành `airflow-webserver` và `airflow-scheduler`) để có một triển khai production-ready hơn.
 -------------END SETUP-------------
