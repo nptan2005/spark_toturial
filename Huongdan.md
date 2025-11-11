@@ -172,3 +172,92 @@ Sau đó thêm biến:
 SET JAVA_HOME=%USERPROFILE%\.local\jdk
 SET PATH=%JAVA_HOME%\bin;%PATH%
 ```
+
+## Git merge:
+### 🚀 local lên GitHub:
+```bash
+git push origin main
+```
+### 💡 Kiểm tra nhanh branch tracking:
+```bash
+git branch -vv
+```
+### ⚙️ 1️⃣ Thiết lập branch main tracking đúng origin/main
+```bash
+git branch --set-upstream-to=origin/main main
+```
+### ⚙️ 2️⃣ Thiết lập hành vi pull chuẩn
+1. Để git pull luôn tự động rebase thay vì merge (giữ lịch sử gọn gàng), bạn nên bật:
+Thay vì merge, Git đưa các commit local lên đầu của nhánh remote mới nhất:
+```css
+A---B---C (local)
+     \
+      D---E (remote)
+```
+Sau git pull --rebase, Git “chuyển” commit local lên sau E:
+```css
+A---B---D---E---C'
+```
+#### 🟢 Ưu điểm:
+	*	Lịch sử thẳng hàng, sạch đẹp (linear history).
+	*	Dễ đọc, dễ tìm lỗi khi review hoặc bisect.
+
+#### 🔴 Nhược điểm:
+	*	Không nên rebase commit đã “push” công khai (vì sẽ thay đổi hash commit).
+```bash
+git config --global pull.rebase true
+```
+1. Nếu bạn thích kiểu merge  (ít thay đổi hơn), thì dùng:
+
+```css
+A---B---C (local)
+     \
+      D---E (remote)
+```
+
+sau git pull (merge) sẽ thành:
+
+```css
+A---B---C--------M
+     \          /
+      D---E----/
+```
+#### 🟢 Ưu điểm:
+	* Giữ nguyên lịch sử thực tế (bao gồm cả nhánh merge).
+	* Dễ xem ai merge, khi nào merge.
+#### 🔴 Nhược điểm:
+	*	Lịch sử lộn xộn, khó đọc với nhiều “merge commit” dư thừa.
+	*	Khi làm teamwork, log nhìn sẽ “rối” (nhiều nhánh giao nhau).
+
+
+```bash
+git config --global pull.rebase false
+```
+1. ⚙️ 3️⃣ Thiết lập “push default” để Git tự động đẩy đúng nhánh
+```bash
+git config --global push.default current
+```
+>Nghĩa là: nếu bạn đang ở main → git push sẽ tự push lên origin/main.
+
+### ✅ Kiểm tra lại cấu hình
+Bạn có thể xem toàn bộ config:
+```bash
+git config --list --show-origin
+```
+Hoặc chỉ xem các dòng liên quan:
+```bash
+git config --global --get pull.rebase
+git config --global --get push.default
+```
+### ⚙️ Sử dụng:
+#### Nếu làm một mình hoặc code cá nhân → nên dùng:
+```bash
+git config --global pull.rebase true
+```
+>(giúp lịch sử gọn, dễ hiểu)
+
+#### Nếu làm team có merge request / pull request rõ ràng → nên dùng:
+```bash
+git config --global pull.rebase false
+```
+>(giữ nguyên merge commit để trace dễ dàng)
