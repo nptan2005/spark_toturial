@@ -19,6 +19,8 @@ services:
       interval: 15s
       timeout: 10s
       retries: 5
+    volumes:
+      - ../data:/data
     networks:
       - spark-net
 
@@ -37,6 +39,8 @@ services:
       interval: 15s
       timeout: 10s
       retries: 5
+    volumes:
+      - ../data:/data
     networks:
       - spark-net
 
@@ -51,6 +55,7 @@ services:
       - "8888:8888"  # JupyterLab Web UI
     volumes:
       - ./data:/home/jovyan/data
+      - ../data:/data
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:8888"]
       interval: 20s
@@ -67,8 +72,10 @@ services:
       POSTGRES_USER: ${AIRFLOW_POSTGRES_USER}
       POSTGRES_PASSWORD: ${AIRFLOW_POSTGRES_PASSWORD}
       POSTGRES_DB: ${AIRFLOW_POSTGRES_DB}
-    ports:
-      - "5432:5432"
+    # ports:
+    #   - "5432:5432"
+    expose:
+      - "5432"          # ✅ chỉ expose nội bộ mạng
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     healthcheck:
@@ -145,12 +152,14 @@ services:
       - AIRFLOW__CORE__FERNET_KEY=${FERNET_KEY}
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
       - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=True
-    ports:
-      - "8082:8080"
+    # ports:
+    #   - "8082:8080"
+    expose: ["8080"]   # không publish ra host machine
     volumes:
-      - ./dags:/opt/airflow/dags
-      - ./logs:/opt/airflow/logs
-      - ./plugins:/opt/airflow/plugins
+      - ../airflow_home/dags:/opt/airflow/dags
+      - ../airflow_home/logs:/opt/airflow/logs
+      - ../airflow_home/plugins:/opt/airflow/plugins
+      - ../data:/data
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
       interval: 30s
@@ -179,9 +188,10 @@ services:
     ports:
       - "8082:8080" # Airflow Web UI
     volumes:
-      - ./dags:/opt/airflow/dags
-      - ./logs:/opt/airflow/logs
-      - ./plugins:/opt/airflow/plugins
+      - ../airflow_home/dags:/opt/airflow/dags
+      - ../airflow_home/logs:/opt/airflow/logs
+      - ../airflow_home/plugins:/opt/airflow/plugins
+      - ../data:/data
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
       interval: 30s
@@ -208,9 +218,10 @@ services:
       - AIRFLOW__CORE__FERNET_KEY=${FERNET_KEY}
     command: scheduler
     volumes:
-      - ./dags:/opt/airflow/dags
-      - ./logs:/opt/airflow/logs
-      - ./plugins:/opt/airflow/plugins
+      - ../airflow_home/dags:/opt/airflow/dags
+      - ../airflow_home/logs:/opt/airflow/logs
+      - ../airflow_home/plugins:/opt/airflow/plugins
+      - ../data:/data
     networks:
       - spark-net
     env_file:
@@ -242,9 +253,10 @@ services:
       start_period: 30s
     restart: always
     volumes:
-      - ./dags:/opt/airflow/dags
-      - ./logs:/opt/airflow/logs
-      - ./plugins:/opt/airflow/plugins
+      - ../airflow_home/dags:/opt/airflow/dags
+      - ../airflow_home/logs:/opt/airflow/logs
+      - ../airflow_home/plugins:/opt/airflow/plugins
+      - ../data:/data
     networks:
       - spark-net
     env_file:
@@ -286,6 +298,9 @@ services:
     environment:
       - MINIO_ROOT_USER=${MINIO_ROOT_USER}
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+      - MINIO_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=${MINIO_ROOT_USER}
+      - AWS_SECRET_ACCESS_KEY=${MINIO_ROOT_PASSWORD}
     ports:
       - "9000:9000" # MinIO API
       - "9001:9001" # MinIO Console Web UI
@@ -318,26 +333,31 @@ services:
     networks:
       - spark-net
 
-  kafka:
-    image: wurstmeister/kafka:2.13-2.8.1
-    platform: linux/amd64
-    container_name: kafka
-    depends_on:
-      zookeeper:
-        condition: service_healthy
-    ports:
-      - "9092:9092"
-    environment:
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9092"]
-      interval: 15s
-      timeout: 10s
-      retries: 5
-    networks:
-      - spark-net
+    kafka:
+      image: wurstmeister/kafka:2.13-2.8.1
+      platform: linux/amd64
+      container_name: kafka
+      depends_on:
+        zookeeper:
+          condition: service_healthy
+      ports:
+        - "9092:9092"   # Host access
+        - "29092:29092" # Internal Docker network access
+      environment:
+        # --- Multi-listener setup ---
+        KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092
+        KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+        KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+        KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+        KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+        KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      healthcheck:
+        test: ["CMD", "nc", "-z", "localhost", "29092"]
+        interval: 15s
+        timeout: 10s
+        retries: 5
+      networks:
+        - spark-net
 
   # ------------------- KEYCLOAK (SSO) -------------------
   keycloak:
@@ -399,12 +419,18 @@ services:
     platform: linux/amd64
     container_name: ranger
     environment:
-      RANGER_ADMIN_PASSWORD: admin
+      DB_FLAVOR: "postgres"
+      SQL_CONNECTOR_JAR: "/usr/share/java/postgresql.jar"
+      db_host: "postgres"
+      db_user: "${AIRFLOW_POSTGRES_USER}"
+      db_password: "${AIRFLOW_POSTGRES_PASSWORD}"
     ports:
       - "6080:6080"
     depends_on:
       - postgres
       - keycloak
+    volumes:
+      - ../data:/data
     networks:
       - spark-net
 
@@ -419,6 +445,8 @@ services:
     depends_on:
       - postgres
       - keycloak
+    volumes:
+      - ../data:/data
     networks:
       - spark-net
   token-service:
@@ -434,6 +462,8 @@ services:
       interval: 20s
       timeout: 10s
       retries: 5
+    volumes:
+      - ../data:/data
     networks:
       - spark-net
    # ------------------- PROXY EXTERNAL HOST ACCESS (NGINX) -------------------

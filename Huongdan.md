@@ -261,3 +261,54 @@ git config --global pull.rebase true
 git config --global pull.rebase false
 ```
 >(giữ nguyên merge commit để trace dễ dàng)
+
+
+# Airflow:
+
+## Start:
+
+```bash
+airflow webserver -p 8080
+```
+
+```bash
+airflow scheduler
+```
+
+chạy nền
+
+```bash
+airflow standalone
+```
+
+## 🛑 Dừng tất cả tiến trình Airflow:
+
+```bash
+pkill -f "airflow webserver"
+pkill -f "airflow scheduler"
+```
+Hoặc nếu bạn muốn dừng toàn bộ:
+
+```bash
+pkill -f airflow
+```
+✅ Sau đó, kiểm tra lại:
+
+```bash
+ps aux | grep airflow
+```
+
+## 🧼 (Tuỳ chọn) Dọn log & DB nếu muốn reset sạch
+
+```bash
+rm -rf /Users/nptan2005/airflow/airflow.db
+rm -rf /Users/nptan2005/airflow/logs/*
+```
+
+## Tạo connection Spark trong Airflow
+```bash
+airflow connections add 'spark_default' \
+    --conn-type 'spark' \
+    --conn-host 'local[*]' \
+    --conn-extra '{"queue":"default"}'
+```

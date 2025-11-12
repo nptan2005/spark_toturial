@@ -151,7 +151,11 @@ cython_debug/
 # spark environment docker:
 # spark_toturial.code-workspace
 # .vscode/*
+.ipynb_checkpoints/*
 Logs/
+airflow_home/logs/*
+airflow_home/__pycache__/*
+airflow_home/dags/__pycache__/*
 spark_env/__pycache__/*
 spark_env/dags/__pycache__/*
 spark_env/data/minio/*

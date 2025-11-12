@@ -99,9 +99,9 @@ services:
     ports:
       - "8082:8080"
     volumes:
-      - ./dags:/opt/airflow/dags
-      - ./logs:/opt/airflow/logs
-      - ./plugins:/opt/airflow/plugins
+      - ../airflow_home/dags:/opt/airflow/dags
+      - ../airflow_home/logs:/opt/airflow/logs
+      - ../airflow_home/plugins:/opt/airflow/plugins
     depends_on:
       - postgres
     networks:

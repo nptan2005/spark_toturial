@@ -2,7 +2,6 @@
   "python.defaultInterpreterPath": "C:\\Users\\tannp\\Anaconda3\\envs\\spark_env\\python.exe",
   "python.terminal.activateEnvironment": true,
   "python.condaPath": "C:\\Users\\tannp\\Anaconda3\\Scripts\\conda.exe",
-
   "terminal.integrated.env.windows": {
     "CONDA_DEFAULT_ENV": "spark_env",
     "JAVA_HOME": "D:\\WorkSpace\\Java\\jdk-23.0.2",
@@ -15,7 +14,6 @@
     "PYSPARK_DRIVER_PYTHON": "python",
     "PATH": "C:\\Users\\tannp\\Anaconda3\\envs\\spark_env;C:\\Users\\tannp\\Anaconda3\\envs\\spark_env\\Scripts;D:\\WorkSpace\\Java\\jdk-23.0.2\\bin;D:\\WorkSpace\\Python\\spark-4.0.1-bin-hadoop3\\bin;${env:PATH}"
   },
-
   "terminal.integrated.env.linux": {
     "CONDA_DEFAULT_ENV": "spark_env",
     "JAVA_HOME": "/home/${env:USER}/WorkSpace/Java/jdk-23.0.2",
@@ -28,22 +26,42 @@
     "PYSPARK_DRIVER_PYTHON": "python3",
     "PATH": "/home/${env:USER}/WorkSpace/Java/jdk-23.0.2/bin:/home/${env:USER}/WorkSpace/Python/spark-4.0.1-bin-hadoop3/bin:${env:PATH}"
   },
-
   "terminal.integrated.env.osx": {
     "CONDA_DEFAULT_ENV": "spark_env",
-    "JAVA_HOME": "/Users/${env:USER}/WorkSpace/Java/jdk-23.0.2",
-    "SPARK_HOME": "/Users/${env:USER}/WorkSpace/Python/spark-4.0.1-bin-hadoop3",
-    "HADOOP_HOME": "/Users/${env:USER}/WorkSpace/Python/spark-4.0.1-bin-hadoop3/hadoop",
-    "AIRFLOW_HOME": "/Users/${env:USER}/SourceCode/Python/spark_toturial/spark-airflow-demo",
-    "ATLAS_HOME": "/Users/${env:USER}/SourceCode/Python/spark_toturial/spark-airflow-demo/images/atlas",
-    "RANGER_HOME": "/Users/${env:USER}/SourceCode/Python/spark_toturial/spark-airflow-demo/images/ranger",
+    "JAVA_HOME": "/opt/homebrew/opt/openjdk",
+    "SPARK_HOME": "/Users/${env:USER}/SourceCode/Python/spark-4.0.1-bin-hadoop3",
+    "HADOOP_HOME": "/Users/${env:USER}/SourceCode/Python/spark-4.0.1-bin-hadoop3",
+    "AIRFLOW_HOME": "/Users/${env:USER}/SourceCode/Python/spark_toturial/airflow_home",
+    "AIRFLOW__CORE__DAGS_FOLDER": "/Users/${env:USER}/SourceCode/Python/spark_toturial/airflow_home/dags",
+    "AIRFLOW__CORE__PLUGINS_FOLDER": "/Users/${env:USER}/SourceCode/Python/spark_toturial/airflow_home/plugins",
+    "AIRFLOW__CORE__BASE_LOG_FOLDER": "/Users/${env:USER}/SourceCode/Python/spark_toturial/airflow_home/logs",
     "PYSPARK_PYTHON": "python3",
     "PYSPARK_DRIVER_PYTHON": "python3",
-    "PATH": "/Users/${env:USER}/WorkSpace/Java/jdk-23.0.2/bin:/Users/${env:USER}/WorkSpace/Python/spark-4.0.1-bin-hadoop3/bin:${env:PATH}"
+    "SPARK_CONNECT_MODE": "local",
+    "PATH": "/opt/homebrew/opt/openjdk/bin:/Users/${env:USER}/SourceCode/Python/spark-4.0.1-bin-hadoop3/bin:${env:PATH}"
   },
-
   "python.formatting.provider": "black",
-  "python.formatting.blackArgs": ["--line-length", "120"],
+  "python.formatting.blackArgs": [
+    "--line-length",
+    "120"
+  ],
   "editor.formatOnSave": true,
-  "editor.tabSize": 4
+  "editor.tabSize": 4,
+  // ==== DISABLE JAVA MAVEN AUTO BUILD ====
+  "java.autobuild.enabled": false,
+  "java.import.maven.enabled": false,
+  "java.import.gradle.enabled": false,
+  "maven.executable.path": "",
+  "maven.server.enabled": false,
+  "maven.workspace.trust": false,
+  "files.exclude": {
+    "**/images/ranger/**": true,
+    "**/images/atlas/**": true,
+    "**/target": true
+  },
+  "search.exclude": {
+    "**/images/ranger/**": true,
+    "**/images/atlas/**": true,
+    "**/target": true
+  }
 }
