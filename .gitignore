@@ -152,7 +152,7 @@ cython_debug/
 # spark_toturial.code-workspace
 .vscode/*
 .ipynb_checkpoints/*
-Logs/
+logs/*
 airflow_home/logs/*
 airflow_home/__pycache__/*
 airflow_home/dags/__pycache__/*
@@ -168,5 +168,7 @@ spark-airflow-demo/images/atlas/apache-atlas-2.3.0/*
 spark-airflow-demo/images/atlas/apache-atlas-2.3.0.tar
 spark-airflow-demo/images/ranger/apache-ranger-2.3.0/*
 spark-airflow-demo/images/ranger/apache-ranger-2.3.0.tar
+spark-airflow-demo/images/ranger/postgresql-42.7.7.jar
 spark-airflow-demo/data/minio/*
 spark-airflow-demo/data/postgres/*
+spark-airflow-demo/data/loki/*

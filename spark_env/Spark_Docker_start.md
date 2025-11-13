@@ -180,6 +180,112 @@ airflow webserver -p 8082
 * 🔹 Lợi ích: không cần Docker, có thể debug trực tiếp, dùng Python + pip.
 * 🔹 Hạn chế: phải cài đủ Java, Spark, Hadoop, Postgres, Kafka thủ công.
 
+
+# Docker kiểm tra:
+
+```bash
+docker ps --format "table {{.Names}}\t{{.Status}}"
+```
+
+full
+
+```bash
+docker compose ps
+```
+# Docker cleanup
+## 🔥 1️⃣ Xoá toàn bộ log của container (tự động giảm file JSON log)
+
+Docker log nằm ở:
+```
+/var/lib/docker/containers/<container-id>/<container-id>-json.log
+```
+Lệnh dọn:
+```bash
+docker ps -aq | xargs -I {} sh -c 'truncate -s 0 /var/lib/docker/containers/{}/{}-json.log 2>/dev/null'
+```
+### ⚠️ Note:
+Trên macOS, đường dẫn thực tế nằm trong VM, nhưng Docker Desktop hỗ trợ truncate qua CLI.
+
+* ✔ Log sẽ trở về 0 byte
+* ✔ Container không restart
+* ✔ Không mất dữ liệu volume
+
+## 🔥 2️⃣ Xóa container đã dừng:
+
+```bash
+docker container prune -f
+```
+
+## 🔥 3️⃣ Xóa image không dùng (dangling + orphan)
+
+```bash
+docker image prune -a -f
+```
+Nếu muốn xem trước khi xoá:
+```bash
+docker image prune -a
+```
+## 🔥 4️⃣ Xoá network rác (docker-compose up/down nhiều sẽ sinh ra)
+```bash
+docker network prune -f
+```
+## 🔥 5️⃣ Xoá volume rác (không còn gắn vào container nào)
+
+```bash
+docker volume prune -f
+```
+>⚠️ Lưu ý: volume prune chỉ xoá volume không sử dụng → an toàn.
+
+## 🔥 6️⃣ Xoá toàn bộ build cache (rất nặng, 2–20GB)
+```bash
+docker builder prune -a -f
+```
+## 🔥 7️⃣ Xóa mọi thứ không dùng (CLEAN FULL)
+```bash
+docker system prune -a --volumes -f
+```
+>### ⚠️ Cẩn trọng:
+>*	Xoá tất cả container STOPPED
+>*	Xoá mọi image không được container nào dùng
+>*	Xoá network rác
+>*	Xoá build cache
+>*	Xoá volume không dùng
+>> Nhưng sẽ không xoá volume đang mount cho project.
+
+## 🔥 8️⃣ Kiểm tra dung lượng Docker sau khi dọn
+```bash
+docker system df
+```
+chạy lệnh này trước → để xem cái gì đang chiếm dung lượng:
+
+output ví dụ:
+```
+> docker system df
+TYPE            TOTAL     ACTIVE    SIZE      RECLAIMABLE
+Images          21        21        18.51GB   3.829GB (20%)
+Containers      26        18        597.5MB   99.27MB (16%)
+Local Volumes   50        7         390.2MB   321.5MB (82%)
+Build Cache     55        0         2.936GB   2.936GB
+```
+## 🔥 9️⃣ Docker Desktop GUI cũng có nút dọn cache
+Settings → Troubleshoot → Clean/Purge Data
+Nhưng CLI chính xác hơn và tuỳ chỉnh được.
+## ⭐ Gợi ý dọn dẹp
+
+Vì Project đang build rất nhiều docker image big-size (Spark, Airflow, Keycloak, Ranger, Atlas, Prometheus, Loki…), nên khuyên chạy:
+
+Gói dọn tiêu chuẩn nên dùng hằng ngày:
+```bash
+docker system prune -f
+docker builder prune -f
+docker volume prune -f
+```
+Gói dọn toàn bộ (1 tuần/lần)
+```bash
+docker system prune -a --volumes -f
+```
+
+
 # ✅ Tổng kết
 
 Docker giúp bạn chạy đầy đủ stack Spark + Hadoop + Kafka + Airflow + MinIO + Postgres chỉ bằng 1 câu lệnh.

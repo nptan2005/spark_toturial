@@ -1,0 +1,191 @@
+{
+  "title": "CDP - Full Monitoring (Group Layout)",
+  "uid": "cdp-monitoring-a",
+  "schemaVersion": 36,
+  "version": 1,
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+
+
+
+    {
+      "type": "row",
+      "title": "System Metrics (CPU / RAM / DISK / Network)",
+      "collapsed": false,
+      "panels": []
+    },
+
+    {
+      "id": 101,
+      "title": "CPU Usage per Service",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 1, "w": 24, "h": 6 },
+      "targets": [
+        {
+          "expr": "sum by (container_label_com_docker_compose_service) (rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service!=\"\"}[1m]))",
+          "legendFormat": "{{container_label_com_docker_compose_service}}"
+        }
+      ]
+    },
+
+    {
+      "id": 102,
+      "title": "Memory Usage per Service",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 7, "w": 24, "h": 6 },
+      "targets": [
+        {
+          "expr": "sum by (container_label_com_docker_compose_service) (container_memory_usage_bytes{container_label_com_docker_compose_service!=\"\"})",
+          "legendFormat": "{{container_label_com_docker_compose_service}}"
+        }
+      ]
+    },
+
+    {
+      "id": 103,
+      "title": "Disk IO (Read/Write)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 13, "w": 12, "h": 6 },
+      "targets": [
+        {
+          "expr": "sum(rate(container_fs_reads_bytes_total[1m])) by (container_label_com_docker_compose_service)",
+          "legendFormat": "{{container_label_com_docker_compose_service}} read"
+        },
+        {
+          "expr": "sum(rate(container_fs_writes_bytes_total[1m])) by (container_label_com_docker_compose_service)",
+          "legendFormat": "{{container_label_com_docker_compose_service}} write"
+        }
+      ]
+    },
+
+    {
+      "id": 104,
+      "title": "Network IO (RX/TX)",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 13, "w": 12, "h": 6 },
+      "targets": [
+        {
+          "expr": "sum(rate(container_network_receive_bytes_total[1m])) by (container_label_com_docker_compose_service)",
+          "legendFormat": "{{container_label_com_docker_compose_service}} RX"
+        },
+        {
+          "expr": "sum(rate(container_network_transmit_bytes_total[1m])) by (container_label_com_docker_compose_service)",
+          "legendFormat": "{{container_label_com_docker_compose_service}} TX"
+        }
+      ]
+    },
+
+
+    {
+      "type": "row",
+      "title": "Service Health",
+      "collapsed": false,
+      "panels": []
+    },
+
+    {
+      "id": 201,
+      "title": "Services UP Status",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 19, "w": 24, "h": 4 },
+      "targets": [
+        {
+          "expr": "up{job=~\"prometheus|loki|grafana|kafka|spark.*|airflow.*|nginx-prometheus-exporter|cadvisor\"}",
+          "legendFormat": "{{job}}"
+        }
+      ]
+    },
+
+ 
+
+    {
+      "type": "row",
+      "title": "Logs (Loki)",
+      "collapsed": false,
+      "panels": []
+    },
+
+    {
+      "id": 301,
+      "title": "Airflow - Live Logs",
+      "type": "logs",
+      "gridPos": { "x": 0, "y": 23, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "{job=\"airflow\"}"
+        }
+      ]
+    },
+
+    {
+      "id": 302,
+      "title": "Spark - Live Logs",
+      "type": "logs",
+      "gridPos": { "x": 12, "y": 23, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "{job=\"spark\"}"
+        }
+      ]
+    },
+
+    {
+      "id": 303,
+      "title": "Kafka - Logs",
+      "type": "logs",
+      "gridPos": { "x": 0, "y": 31, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "{job=\"kafka\"}"
+        }
+      ]
+    },
+
+    {
+      "id": 304,
+      "title": "Token Service - Logs",
+      "type": "logs",
+      "gridPos": { "x": 12, "y": 31, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "{job=\"token_service\"}"
+        }
+      ]
+    },
+
+
+    {
+      "type": "row",
+      "title": "Alerts",
+      "collapsed": false,
+      "panels": []
+    },
+
+    {
+      "id": 401,
+      "title": "ERROR Spike (5m)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 39, "w": 12, "h": 6 },
+      "targets": [
+        {
+          "expr": "sum(count_over_time({job=~\"airflow|spark|kafka|token_service\"} |= \"ERROR\"[5m]))",
+          "legendFormat": "ERROR spike"
+        }
+      ]
+    },
+
+    {
+      "id": 402,
+      "title": "OOM - Memory Fail Count",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 39, "w": 12, "h": 6 },
+      "targets": [
+        {
+          "expr": "sum by (container_label_com_docker_compose_service) (container_memory_failcnt)",
+          "legendFormat": "{{container_label_com_docker_compose_service}}"
+        }
+      ]
+    }
+
+  ]
+}

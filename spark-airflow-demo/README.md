@@ -4,77 +4,82 @@ File [docker-compose.yml](docker-compose.yml) trong sub-project spark-airflow-de
 **_Note_**: là bảng bổ sung thành phần Governance so với sub project spark_env
 
 ## Spark Environment Architecture:
-```css
-                       +------------------+
-                       |     Keycloak     |
-                       |      SSO         |
-                       |     (8085)       |
-                       +--------+---------+
-                                |
-                                | OAuth2 / OIDC
-                                v
-+------------------+       +------------------+       +------------------+
-|   Spark UI Proxy |<----->|  Spark Master    |<----->|  Spark Worker(s) |
-|      (8084)      |       |  (8080/7077)     |       |     (8081)       |
-+------------------+       +------------------+       +------------------+
-        ^                          ^
-        | OAuth2 + Submit Job      | Spark Job / Task
-        |                          |
-+-------+--------------------------+--------+
-|                 Spark Cluster               |
-|--------------------------------------------|
-|  JupyterLab (8888)                         |
-|  - Interactive Notebooks                    |
-|  - PySpark submit to cluster                |
-|--------------------------------------------|
-|  Airflow (8082)                             |
-|  - DAG Scheduling                           |
-|  - Triggers Spark / MinIO jobs              |
-+------------------+-------------------------+
-                   |
-                   | Reads/Writes
-                   v
-          +-------------------+
-          |      MinIO        |
-          |   Object Storage  |
-          |   (9000/9001)    |
-          +-------------------+
-                   ^
-                   |
-                   | Streaming / Batch
-+------------------+-------------------+
-|                  Kafka                 |
-| +-------------+    +---------------+  |
-| | Zookeeper   |<-->| Kafka Broker  |  |
-| | (2181)      |    | (9092)        |  |
-| +-------------+    +---------------+  |
-+---------------------------------------+
-                   ^
-                   |
-                   | Metadata
-                   v
-          +-------------------+
-          |    Postgres       |
-          |  Airflow / Atlas  |
-          |  Metadata DB      |
-          |  (5432)           |
-          +-------------------+
-                   ^
-                   |
-                   |
-+------------------+-------------------+
-|            Governance Layer          |
-|-------------------------------------|
-| Atlas (21000)                        |
-| - Metadata Catalog / Data Lineage    |
-| Ranger (6080)                        |
-| - Policy-based Access Control (ABAC) |
-| Token Service (5001)                 |
-| - JWT token provider for Spark / UI  |
-+-------------------------------------+
+```txt
+                                   +-----------------------+
+                                   |       Keycloak        |
+                                   |   SSO / OAuth2 (8085) |
+                                   +-----------+-----------+
+                                               |
+                                               | OIDC Auth
+                                               v
++-----------------------+        +-----------------------+        +------------------------+
+|    Spark UI Proxy     |<------>|     Spark Master      |<------>|     Spark Worker(s)    |
+|     OAuth2 (8084)     |        |   8080 (UI) / 7077    |        |        (8081)          |
++-----------+-----------+        +-----------+-----------+        +-----------+------------+
+            ^                                ^                                ^
+            |                                |                                |
+            |                                | Spark Tasks                    |
+            | OAuth2 Redirect                |                                |
+            |                                |                                |
++-----------+-----------+          +----------+------------+       +-----------+------------+
+|        JupyterLab     |          |      Airflow Web      |       |       Airflow Scheduler |
+|       Notebook (8888) |          |     UI (8082)         |       |     + DAG Processor     |
++-----------+-----------+          +----------+------------+       +-----------+------------+
+            |                                |                                |
+            +-----------+--------------------+--------------+------------------+
+                        |                                   |
+                        |  Submit jobs / Read-Write data    |
+                        v                                   v
+                 +-------------------+               +-------------------+
+                 |      MinIO        |               |     Postgres      |
+                 |   S3 Storage      |               |  Metadata DB (5432)|
+                 +---------+---------+               +----------+----------+
+                           ^                                     ^
+                           |                                     |
+                           | Batch/Stream Data                   | Metadata
+                           |                                     |
++--------------------------+-------------------------------------+--------------------------+
+|                                         Kafka                                                      |
+|                       +----------------+       +-------------------+                             |
+|                       |   Zookeeper    |<----->|   Kafka Broker    |                             |
+|                       |     (2181)     |       |  (9092 / 29092)   |                             |
++--------------------------+-------------------------------------+----------------------------------+
+                           |
+                           v
+          +----------------+-------------------+
+          |               Governance           |
+          |-----------------------------------|
+          | Ranger (6080) — Policy / ABAC     |
+          | Atlas  (21000) — Data Lineage     |
+          | Token Service (5001) — JWT        |
+          +-----------------------------------+
 
+==================================================================================================
+                        🔍  Monitoring + Observability Stack
+==================================================================================================
 
++-------------------+       +--------------------+       +---------------------+
+|     Prometheus    |<----->|    cAdvisor        |       | Nginx Exporter      |
+|     (9090)        |       | Docker Metrics     |       | Internal Metrics    |
++---------+---------+       +---------+----------+       +----------+----------+
+          |                           |                             |
+          v                           v                             v
++-----------------------------------------------------------------------------------------------+
+|                                           Loki                                                 |
+|                                      (Logs Backend, 3100)                                      |
++-------------------------------------------+---------------------------------------------------+
+                                            |
+                                            v
+                                   +----------------+
+                                   |    Grafana     |
+                                   |  Dashboards    |
+                                   |     (3000)     |
+                                   +----------------+
 ```
+## Kiến trúc hệ thống
+
+![CDP Architecture](docs/images/architecture-visual.svg)
+
 
 ## Các thành phần được cấu hình:
 ### 1. Spark
@@ -232,7 +237,154 @@ File [docker-compose.yml](docker-compose.yml) trong sub-project spark-airflow-de
 * **Token Service** (5001)
 >* JWT token provider cho Spark UI Proxy và các service khác.
 
-### 9. Luồng dữ liệu tổng quát
+### 9. Monitoring
+#### 9.1. Prometheus
+>* Image: prom/prometheus:latest
+>* Container Name: prometheus
+>* Ports: 9090:9090 → Prometheus UI
+>* Volumes: ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+>* Mạng: spark-net
+
+**Vai trò:**
+* Thu thập metrics từ Spark, Kafka, Nginx exporter, cAdvisor.
+* Lưu time-series metrics cho Grafana.
+
+**Ứng dụng:**
+* Giám sát CPU, RAM, network của container.
+* Tracking Spark executor usage, Kafka broker, Airflow scheduler metrics.
+
+**Luồng dữ liệu:**
+* Prometheus pull metrics từ exporters → push sang Grafana dashboards.
+
+⸻
+
+#### 9.2 Loki (Log Backend)
+>* Image: grafana/loki:2.8.2
+>* Container Name: loki
+>* Ports: 3100:3100
+>* Volumes: ./monitoring/loki-config.yml:/etc/loki/local-config.yml
+
+**Vai trò:**
+* Lưu trữ toàn bộ log ứng dụng: Spark, Kafka, Airflow, Nginx, Token Service, Docker logs.
+
+**Ứng dụng:**
+* Truy vấn log bằng LogQL.
+* Là backend log cho Grafana Explore.
+
+**Luồng dữ liệu:**
+* Promtail → gửi log đến Loki → Grafana đọc từ Loki.
+
+
+#### 9.3 Promtail (Log Collector)
+>* Image: grafana/promtail:2.8.2
+>* Container Name: promtail
+>* Volumes:
+>>* ./monitoring/promtail-config.yml:/etc/promtail/config.yml
+>>* ../logs:/logs (toàn bộ log trên host)
+
+**Vai trò:**
+* Agent thu thập log từ host và container.
+* Parse log theo job (spark, kafka, nginx, airflow…).
+
+**Ứng dụng:**
+* Chuyển qua Loki để hiển thị trong Grafana.
+
+**Luồng dữ liệu:**
+* Log → Promtail → Loki → Grafana.
+
+#### 9.4  Grafana
+>* Image: grafana/grafana:9.5.0
+>* Container Name: grafana
+>* Ports: 3000:3000
+>* Volumes:
+>>* grafana-storage:/var/lib/grafana
+>>* ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+>>* ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+
+**Vai trò:**
+* Dashboard giám sát toàn hệ thống.
+* Hiển thị metrics + log + health của mọi service.
+
+**Ứng dụng:**
+* Dashboard Spark, Kafka, Airflow, MinIO, Token Service.
+* Live log stream từ Loki.
+
+**Luồng dữ liệu:**
+* Prometheus → Metrics → Grafana
+* Loki → Logs → Grafana
+
+#### 9.5  cAdvisor (Docker Metrics)
+>* Image: gcr.io/google-containers/cadvisor:latest
+>* Container Name: cadvisor
+>* Expose: 8080
+>* Volumes:
+>>* /var/lib/docker (Docker engine)
+>>* /sys, /var/run…
+
+**Vai trò:**
+* Thu thập metrics container-level:
+* CPU
+* RAM
+* Disk I/O
+* Network I/O
+
+**Ứng dụng:**
+* Xem real-time performance toàn bộ stack Spark → Airflow → Kafka.
+
+**Luồng dữ liệu:**
+* cAdvisor → Prometheus → Grafana.
+
+#### 9.6 Nginx Prometheus Exporter
+>* Image: nginx/nginx-prometheus-exporter
+>* Container Name: nginx-prometheus-exporter
+>* Ports: 9113:9113
+>* Scrape URI: http://access-host-proxy:8081/nginx_status
+
+**Vai trò:**
+* Xuất metrics Nginx:
+* request rate
+* active connections
+* dropped connections
+
+**Ứng dụng:**
+* Theo dõi database proxy load, traffic đến Airflow/Spark.
+
+**Luồng dữ liệu:**
+* Exporter → Prometheus → Grafana dashboard Nginx.
+
+#### Monitoring Dashboard (JSON + Provisioning):
+🔹 1. Airflow Dashboard
+	•	Scheduler delay
+	•	DAG execution time
+	•	Task duration
+	•	Worker load
+
+🔹 2. Spark Dashboard
+	•	Executors
+	•	Jobs / Stages
+	•	Task durations
+	•	CPU/RAM usage
+
+🔹 3. Kafka Dashboard
+	•	Broker health
+	•	Consumer lag
+	•	ISR / Under-replicated partitions
+
+🔹 4. Nginx Dashboard
+	•	Requests per second
+	•	Active connections
+	•	Upstream latency
+
+🔹 5. Token Service Dashboard
+	•	Response time
+	•	Error rate
+
+🔹 6. Docker System Dashboard
+	•	Per-container CPU, RAM
+	•	Disk I/O
+	•	Network usage
+
+### 10. Luồng dữ liệu tổng quát
 ### 1. Batch/Interactive:
 > JupyterLab → Spark Master → Spark Worker → MinIO
 ### 2. Streaming:
@@ -252,11 +404,14 @@ File [docker-compose.yml](docker-compose.yml) trong sub-project spark-airflow-de
 >* MinIO Console (9001)
 >* Jupyter Notebook (8888)
 
-### 10. Lưu ý vận hành
+### 11. Lưu ý vận hành
 
 * **Cross-platform:** platform: linux/amd64 đảm bảo chạy được trên Mac ARM và Windows.
 * **Volume mapping:** giữ dữ liệu persistent (Postgres, MinIO, Airflow logs, Jupyter data).
 * **Start containers:**
+  
+#### Cách lệnh docker cơ bản: 
+
 ```bash
 docker-compose up -d
 ```
@@ -268,6 +423,111 @@ docker-compose down
 ```bash
 docker logs -f <container_name>
 ```
+
+#### Docker kiểm tra:
+
+```bash
+docker ps --format "table {{.Names}}\t{{.Status}}"
+```
+
+full
+
+```bash
+docker compose ps
+```
+### 12. Docker cleanup
+#### 🔥 1️⃣ Xoá toàn bộ log của container (tự động giảm file JSON log)
+
+Docker log nằm ở:
+```
+/var/lib/docker/containers/<container-id>/<container-id>-json.log
+```
+Lệnh dọn:
+```bash
+docker ps -aq | xargs -I {} sh -c 'truncate -s 0 /var/lib/docker/containers/{}/{}-json.log 2>/dev/null'
+```
+##### ⚠️ Note:
+Trên macOS, đường dẫn thực tế nằm trong VM, nhưng Docker Desktop hỗ trợ truncate qua CLI.
+
+* ✔ Log sẽ trở về 0 byte
+* ✔ Container không restart
+* ✔ Không mất dữ liệu volume
+
+#### 🔥 2️⃣ Xóa container đã dừng:
+
+```bash
+docker container prune -f
+```
+
+#### 🔥 3️⃣ Xóa image không dùng (dangling + orphan)
+
+```bash
+docker image prune -a -f
+```
+Nếu muốn xem trước khi xoá:
+```bash
+docker image prune -a
+```
+#### 🔥 4️⃣ Xoá network rác (docker-compose up/down nhiều sẽ sinh ra)
+```bash
+docker network prune -f
+```
+#### 🔥 5️⃣ Xoá volume rác (không còn gắn vào container nào)
+
+```bash
+docker volume prune -f
+```
+>⚠️ Lưu ý: volume prune chỉ xoá volume không sử dụng → an toàn.
+
+#### 🔥 6️⃣ Xoá toàn bộ build cache (rất nặng, 2–20GB)
+```bash
+docker builder prune -a -f
+```
+#### 🔥 7️⃣ Xóa mọi thứ không dùng (CLEAN FULL)
+```bash
+docker system prune -a --volumes -f
+```
+>##### ⚠️ Cẩn trọng:
+>*	Xoá tất cả container STOPPED
+>*	Xoá mọi image không được container nào dùng
+>*	Xoá network rác
+>*	Xoá build cache
+>*	Xoá volume không dùng
+>> Nhưng sẽ không xoá volume đang mount cho project.
+
+#### 🔥 8️⃣ Kiểm tra dung lượng Docker sau khi dọn
+```bash
+docker system df
+```
+chạy lệnh này trước → để xem cái gì đang chiếm dung lượng:
+
+output ví dụ:
+```
+> docker system df
+TYPE            TOTAL     ACTIVE    SIZE      RECLAIMABLE
+Images          21        21        18.51GB   3.829GB (20%)
+Containers      26        18        597.5MB   99.27MB (16%)
+Local Volumes   50        7         390.2MB   321.5MB (82%)
+Build Cache     55        0         2.936GB   2.936GB
+```
+#### 🔥 9️⃣ Docker Desktop GUI cũng có nút dọn cache
+Settings → Troubleshoot → Clean/Purge Data
+Nhưng CLI chính xác hơn và tuỳ chỉnh được.
+#### ⭐ Gợi ý dọn dẹp
+
+Vì Project đang build rất nhiều docker image big-size (Spark, Airflow, Keycloak, Ranger, Atlas, Prometheus, Loki…), nên khuyên chạy:
+
+Gói dọn tiêu chuẩn nên dùng hằng ngày:
+```bash
+docker system prune -f
+docker builder prune -f
+docker volume prune -f
+```
+Gói dọn toàn bộ (1 tuần/lần)
+```bash
+docker system prune -a --volumes -f
+```
+
 
 ## Truy cập Web UI:
 
