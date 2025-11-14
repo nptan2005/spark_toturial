@@ -1379,6 +1379,89 @@ keycloak:
 * Zookeeper: zookeeper:3.7.1 (pull được)
 * Kafka, Spark, Jupyter, MinIO, Postgres, Airflow: giữ nguyên.
 
+## Build custom Spark:
+```bash
+cd images/spark
+docker build --platform=linux/arm64 -t local/spark:3.5.1-full .
+```
+
+Test nhanh:
+
+```bash
+# chạy container interactive
+docker run --rm -it --entrypoint /bin/zsh local/spark:3.5.1-full -l
+# hoặc exec vào running container
+docker exec -it spark-master /bin/zsh -l
+```
+
+## Airflow custom image:
+```bash
+docker build --platform=linux/arm64 -t local/airflow:2.10.5-custom .
+```
+
+### 🔍 Kiểm tra Airflow image
+#### ✔ Kiểm tra Airflow version
+```bash
+docker run --rm local/airflow:2.10.5-custom airflow version
+```
+#### ✔ Kiểm tra cx_Oracle load Instant Client đúng
+```bash
+docker run -it --rm local/airflow:2.10.5-custom python3 - <<EOF
+import cx_Oracle
+print("cx_Oracle OK")
+EOF
+```
+Nếu lỗi DPI-1047, nghĩa là Instant Client đặt sai đường dẫn.
+
+#### ✔ Kiểm tra ORACLE_HOME & LD_LIBRARY_PATH
+```bash
+docker run --rm local/airflow:2.10.5-custom sh -c "echo ORACLE_HOME=$ORACLE_HOME; echo LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+```
+### 🟧 Lệnh kiểm tra DAG import pyspark
+(DAG không chạy Spark job, chỉ kiểm tra import)
+```bash
+docker run -it --rm local/airflow:2.10.5-custom python3 - <<EOF
+import pyspark
+print("pyspark import OK")
+EOF
+```
+### 🟪 Kiểm tra Instant Client Oracle
+
+```bash
+docker run -it --rm local/airflow:2.10.5-custom ls /opt/oracle
+docker run -it --rm local/airflow:2.10.5-custom ls /opt/oracle/instantclient_23_6
+```
+
+### 🟥 Kiểm tra Airflow Providers đã cài
+
+```bash
+docker run -it --rm local/airflow:2.10.5-custom pip show apache-airflow-providers-oracle
+docker run -it --rm local/airflow:2.10.5-custom pip show apache-airflow-providers-postgres
+docker run -it --rm local/airflow:2.10.5-custom pip show apache-airflow-providers-docker
+```
+
+### 🟦 Kiểm tra SparkSubmitOperator từ Airflow container
+```bash
+docker run -it --rm local/airflow:2.10.5-custom pyspark --version
+```
+### 🟩 Kiểm tra DAG folder đã mount chính xác khi chạy docker-compose
+sau khi bạn chạy compose:
+```bash
+docker exec -it airflow-webserver ls /opt/airflow/dags
+docker exec -it airflow-webserver airflow dags list
+```
+## Build Kafka client:
+```bash
+docker build --platform=linux/arm64 -t local/kafka-client:latest .
+```
+Test
+```bash
+docker run --rm \
+  --network spark-net \
+  -v $(pwd)/logs:/app/logs \
+  local/kafka-client:latest
+```
+
 ## 3️⃣ Flow full luồng:
 
 1. MinIO: lưu input dữ liệu CSV / Parquet.

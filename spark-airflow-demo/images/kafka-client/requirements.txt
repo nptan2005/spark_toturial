@@ -1,0 +1,11 @@
+kafka-python==2.0.2
+confluent-kafka==2.5.0
+pydantic==2.9.2
+python-dotenv
+orjson
+requests
+loguru
+cx_Oracle
+fastavro
+pyspark==3.5.1
+pyarrow

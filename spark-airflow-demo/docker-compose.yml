@@ -3,38 +3,50 @@
 services:
   # ------------------- SPARK -------------------
   spark-master:
-    image: bde2020/spark-master:3.3.0-hadoop3.3
-    platform: linux/amd64
+    image: local/spark:3.5.1-full
+    # platform: linux/amd64
     container_name: spark-master
     ports:
       - "8080:8080"   # Spark Master Web UI
       - "7077:7077"   # Spark Master port
+      - "18080:18080"     # Spark History Server
     environment:
       - SPARK_MODE=master
+      - SPARK_MASTER_PORT=7077
       - SPARK_PUBLIC_DNS=spark-master
+      - SPARK_HISTORY_OPTS=-Dspark.history.fs.logDirectory=/opt/spark/history
+      - SPARK_LOCAL_IP=127.0.0.1
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/json/ || exit 1"]
       interval: 15s
       timeout: 10s
       retries: 5
     volumes:
       - ../data:/data
       - ../logs/spark:/spark/logs
+      - ../spark/jobs:/opt/spark/jobs
+      - ./data/spark-history:/opt/spark/history
     logging:
       driver: json-file
       options:
         max-size: "10m"
         max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 2g
+          cpus: "1.5"
     networks:
       - spark-net
 
   spark-worker:
-    image: bde2020/spark-worker:3.3.0-hadoop3.3
-    platform: linux/amd64
+    image: local/spark:3.5.1-full
+    # platform: linux/amd64
     container_name: spark-worker
     depends_on:
       - spark-master
     environment:
+      - SPARK_MODE=worker
       - SPARK_MASTER=spark://spark-master:7077
     ports:
       - "8081:8081"   # Spark Worker Web UI
@@ -46,11 +58,17 @@ services:
     volumes:
       - ../data:/data
       - ../logs/spark:/spark/logs
+      - ../spark/jobs:/opt/spark/jobs
     logging:
       driver: json-file
       options:
         max-size: "10m"
         max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 4g
+          cpus: "2.0"
     networks:
       - spark-net
 
@@ -68,7 +86,7 @@ services:
       - ../data:/data
       - ../logs/jupyter:/home/jovyan/logs
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/realms/master"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:8888 || exit 1"]
       interval: 20s
       timeout: 10s
       retries: 10
@@ -156,6 +174,7 @@ services:
       - ../airflow_home/dags:/opt/airflow/dags
       - ../logs/airflow:/opt/airflow/logs
       - ../airflow_home/plugins:/opt/airflow/plugins
+      - ../airflow_home/scripts:/opt/airflow/scripts
     networks:
       - spark-net
     deploy:
@@ -190,6 +209,7 @@ services:
       - ../airflow_home/dags:/opt/airflow/dags
       - ../logs/airflow:/opt/airflow/logs
       - ../airflow_home/plugins:/opt/airflow/plugins
+      - ../airflow_home/scripts:/opt/airflow/scripts
       - ../data:/data
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
@@ -214,6 +234,11 @@ services:
         condition: service_healthy
       airflow-init:
         condition: service_completed_successfully
+    deploy:
+      resources:
+        limits:
+          memory: 2g
+          cpus: "1.5"
     environment:
       - AIRFLOW__CORE__EXECUTOR=${EXECUTOR}
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${AIRFLOW_POSTGRES_USER}:${AIRFLOW_POSTGRES_PASSWORD}@postgres/${AIRFLOW_POSTGRES_DB}
@@ -227,6 +252,7 @@ services:
       - ../airflow_home/dags:/opt/airflow/dags
       - ../logs/airflow:/opt/airflow/logs
       - ../airflow_home/plugins:/opt/airflow/plugins
+      - ../airflow_home/scripts:/opt/airflow/scripts
       - ../data:/data
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
@@ -253,6 +279,11 @@ services:
         condition: service_completed_successfully
       redis:
         condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 2g
+          cpus: "1.5"
     environment:
       - AIRFLOW__CORE__EXECUTOR=${EXECUTOR}
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${AIRFLOW_POSTGRES_USER}:${AIRFLOW_POSTGRES_PASSWORD}@postgres/${AIRFLOW_POSTGRES_DB}
@@ -262,6 +293,7 @@ services:
       - ../airflow_home/dags:/opt/airflow/dags
       - ../logs/airflow:/opt/airflow/logs
       - ../airflow_home/plugins:/opt/airflow/plugins
+      - ../airflow_home/scripts:/opt/airflow/scripts
       - ../data:/data
     networks:
       - spark-net
@@ -302,6 +334,7 @@ services:
       - ../airflow_home/dags:/opt/airflow/dags
       - ../logs/airflow:/opt/airflow/logs
       - ../airflow_home/plugins:/opt/airflow/plugins
+      - ../airflow_home/scripts:/opt/airflow/scripts
       - ../data:/data
     networks:
       - spark-net
@@ -370,6 +403,11 @@ services:
       retries: 5
     networks:
       - spark-net
+    deploy:
+      resources:
+        limits:
+          memory: 2g
+          cpus: "1.0"
     logging:
       driver: json-file
       options:
@@ -388,12 +426,17 @@ services:
     volumes:
       - ../logs/zookeeper:/opt/zookeeper/logs
     healthcheck:
-      test: ["CMD", "echo", "ruok", "|", "nc", "localhost", "2181"]
+      test: ["CMD-SHELL", "echo ruok | nc localhost 2181 | grep imok"]
       interval: 20s
       timeout: 10s
       retries: 5
     networks:
       - spark-net
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "0.5"
     logging:
       driver: json-file
       options:
@@ -420,17 +463,33 @@ services:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "29092"]
+      test: ["CMD-SHELL", "nc -z localhost 29092"]
       interval: 15s
       timeout: 10s
       retries: 5
     networks:
       - spark-net
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+          cpus: "1.0"
     logging:
       driver: json-file
       options:
         max-size: "10m"
         max-file: "3"
+  kafka-client:
+    image: local/kafka-client:latest
+    container_name: kafka-client
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - spark-net
+    volumes:
+      - ../logs/kafka_client:/app/logs
+    command: ["python", "producer.py"]
 
   # ------------------- KEYCLOAK (SSO) -------------------
   keycloak:
@@ -545,6 +604,12 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:21000/ || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
 
   token-service:
     build: ./images/token-service
@@ -570,7 +635,7 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-
+# Proxy 
   access-host-proxy:
     build:
       context: ./nginx
@@ -591,7 +656,7 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-
+# Monitoring Stack
   nginx-prometheus-exporter:
     image: nginx/nginx-prometheus-exporter:0.10.0
     container_name: nginx-prometheus-exporter
@@ -617,6 +682,11 @@ services:
       - "9090:9090"
     networks:
       - spark-net
+    deploy:
+      resources:
+        limits:
+          memory: 800m
+          cpus: "0.8"
     logging:
       driver: json-file
       options:
@@ -634,6 +704,11 @@ services:
       - "3100:3100"
     networks:
       - spark-net
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+          cpus: "0.5"
     logging:
       driver: json-file
       options:
@@ -644,7 +719,7 @@ services:
     image: grafana/promtail:2.8.2
     container_name: promtail
     volumes:
-      - ./monitoring/promtail-config.yml:/etc/promtail/config.yml:ro
+      - ./monitoring/promtail.yml:/etc/promtail/config.yml:ro
       - ../logs:/logs:ro
       # Optional: if your Docker host stores container logs under /var/lib/docker/containers
       # and you want promtail to read raw container json logs, uncomment the next line.
@@ -653,6 +728,11 @@ services:
       - loki
     networks:
       - spark-net
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+          cpus: "0.3"
     logging:
       driver: json-file
       options:
@@ -675,6 +755,11 @@ services:
       - loki
     networks:
       - spark-net
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "0.5"
     logging:
       driver: json-file
       options:
@@ -693,6 +778,72 @@ services:
       - /var/lib/docker/:/var/lib/docker:ro
     expose:
       - "8080"
+    networks:
+      - spark-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  ####################
+  # DATABASEs (Oracle + Postgres DWH)
+  ####################
+
+  # oracle:
+  #   image: gvenzl/oracle-free:23-slim
+  #   container_name: oradb
+  #   restart: always
+  #   environment:
+  #     ORACLE_PWD: Oracle123
+  #     ORACLE_CHARACTERSET: AL32UTF8
+  #   ports:
+  #     - "1521:1521"   # listener
+  #     - "5500:5500"   # EM express / dbconsole
+  #   volumes:
+  #     - ./data/oradata:/opt/oracle/oradata
+  #     - ./init/oracle:/container-entrypoint-initdb.d
+  #   # Resource limits để không quá tải Mac M2 (tùy chỉnh nếu cần)
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         memory: 6g
+  #         cpus: '2'
+  #   mem_limit: 6g
+  #   cpus: 2
+  #   healthcheck:
+  #     # Kiểm tra port listener (đơn giản, portable)
+  #     test: ["CMD-SHELL", "cat < /dev/null > /dev/tcp/127.0.0.1/1521 >/dev/null 2>&1 || exit 1"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 10
+  #     start_period: 30s
+  #   networks:
+  #     - spark-net
+  #   logging:
+  #     driver: json-file
+  #     options:
+  #       max-size: "50m"
+  #       max-file: "3"
+
+  postgres-dwh:
+    image: postgres:15
+    container_name: postgres-dwh
+    environment:
+      POSTGRES_USER: dwh
+      POSTGRES_PASSWORD: dwh123
+      POSTGRES_DB: dwhdb
+    ports:
+      - "5433:5432"   # host:container -> host 5433 để tránh conflict
+    volumes:
+      - ./data/postgres_dwh:/var/lib/postgresql/data
+      - ./init/postgres_dwh:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dwh -d dwhdb -h 127.0.0.1 -p 5432"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     networks:
       - spark-net
     logging:

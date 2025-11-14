@@ -1,0 +1,34 @@
+pandas
+numpy
+pyarrow
+fastparquet
+cryptography
+ebcdic
+fonttools
+hexdump
+ipython
+pretty-html-table
+pyemv
+pyiso8583
+xlsxwriter
+pydantic
+psycopg2-binary
+openpyxl
+pysftp
+celery>=5.3.0
+pyspark==3.5.1
+
+# Drivers
+cx_Oracle
+kafka-python
+
+# Airflow providers
+apache-airflow-providers-postgres
+apache-airflow-providers-oracle
+apache-airflow-providers-smtp
+apache-airflow-providers-http
+apache-airflow-providers-sftp
+apache-airflow-providers-slack
+apache-airflow-providers-redis
+apache-airflow-providers-docker
+apache-airflow-providers-databricks

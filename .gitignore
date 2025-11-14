@@ -172,3 +172,5 @@ spark-airflow-demo/images/ranger/postgresql-42.7.7.jar
 spark-airflow-demo/data/minio/*
 spark-airflow-demo/data/postgres/*
 spark-airflow-demo/data/loki/*
+spark-airflow-demo/data/postgres_dwh/*
+spark-airflow-demo/data/spark-history/*
