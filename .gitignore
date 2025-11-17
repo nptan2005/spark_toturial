@@ -174,3 +174,4 @@ spark-airflow-demo/data/postgres/*
 spark-airflow-demo/data/loki/*
 spark-airflow-demo/data/postgres_dwh/*
 spark-airflow-demo/data/spark-history/*spark-airflow-demo/images/airflow/instantclient/
+spark-airflow-demo/images/airflow/instantclient/instantclient-basic-linux.arm64-23.26.0.0.0.zip
