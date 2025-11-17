@@ -134,6 +134,11 @@ python -m ipykernel install --user --name spark_env --display-name "Spark (PySpa
 jupyter lab
 ```
 
+## Lấy token đăng nhập Jupyter:
+```bash
+docker logs jupyterlab 2>&1 | grep -m1 "token="
+```
+
 # 🔒 4️⃣ Bảo mật & tương thích (nếu bạn đang trong môi trường ngân hàng)
 
 * Dữ liệu nhạy cảm → nên disable internet access của Conda environment (dùng mirror nội bộ).

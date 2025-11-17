@@ -12,6 +12,16 @@ RUN apt-get update && \
     && rm -rf /var/lib/apt/lists/*
 
 # -------------------------------------------------
+# Install OpenJDK 17 (upgrade from default Java 11)
+# -------------------------------------------------
+RUN apt-get update && \
+    apt-get install -y openjdk-17-jdk && \
+    rm -rf /var/lib/apt/lists/*
+
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-arm64
+ENV PATH="${JAVA_HOME}/bin:${PATH}"
+
+# -------------------------------------------------
 # UTF-8 locale
 # -------------------------------------------------
 RUN sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && \

@@ -26,7 +26,7 @@ default_args = {
 }
 
 with DAG(
-    "spark_minio_demo",
+    "spark_minio_demo_2",
     default_args=default_args,
     description="Demo Spark job via Airflow, input from MinIO, output to MinIO",
     schedule_interval=None,
@@ -36,8 +36,8 @@ with DAG(
 
     spark_task = SparkSubmitOperator(
         task_id="spark_task",
-        application="/opt/airflow/dags/spark_minio_demo.py",
-        name="spark_minio_demo",
+        application="/opt/airflow/dags/spark_minio_demo_dag_v2.py",
+        name="spark_minio_demo_2",
         conn_id="spark_default",
         verbose=True
     )

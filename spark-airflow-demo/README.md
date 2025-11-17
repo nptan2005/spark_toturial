@@ -528,6 +528,32 @@ Gói dọn toàn bộ (1 tuần/lần)
 docker system prune -a --volumes -f
 ```
 
+## Check sau khi build:
+
+```bash
+# show local images (quick)
+docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.ID}}\t{{.Size}}"
+
+# show containers from compose
+docker compose ps
+
+# show all running containers
+docker ps -a
+
+# tail logs of a service
+docker compose logs -f spark-master
+docker compose logs -f kafka
+
+# inspect container health & status
+docker inspect spark-master --format '{{json .State}}' | jq .
+
+# check ports accessible
+curl -sS http://localhost:8080/   # spark master UI
+curl -sS http://localhost:8082/health  # airflow webserver (if up, maybe port mapping)
+curl -sS http://localhost:9000/minio/health/ready  # minio
+curl -sS http://localhost:3100/  # loki (should respond)
+curl -sS http://localhost:3000/  # grafana
+```
 
 ## Truy cập Web UI:
 

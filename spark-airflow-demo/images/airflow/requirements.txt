@@ -17,6 +17,8 @@ openpyxl
 pysftp
 celery>=5.3.0
 pyspark==3.5.1
+requests
+boto3
 
 # Drivers
 cx_Oracle
@@ -32,3 +34,7 @@ apache-airflow-providers-slack
 apache-airflow-providers-redis
 apache-airflow-providers-docker
 apache-airflow-providers-databricks
+apache-airflow-providers-apache-spark
+# apache-airflow-providers-apache-hdfs
+apache-airflow-providers-amazon
+apache-airflow-providers-cncf-kubernetes
