@@ -1,0 +1,24 @@
+curl -L -o atlas-notification-2.3.0.jar \
+  https://repo1.maven.org/maven2/org/apache/atlas/atlas-notification/2.3.0/atlas-notification-2.3.0.
+
+
+curl -L -o atlas-client-common-2.3.0.jar \
+  https://repo1.maven.org/maven2/org/apache/atlas/atlas-client-common/2.3.0/atlas-client-common-2.3.0.jar
+
+curl -L -o atlas-intg-spark-common-2.3.0.jar \
+  https://repo1.maven.org/maven2/org/apache/atlas/atlas-intg-spark-common/2.3.0/atlas-intg-spark-common-2.3.0.jar
+
+
+curl -L -o spark-atlas-connector-0.4.0.jar \
+  https://repo1.maven.org/maven2/org/apache/atlas/spark-atlas-connector/0.4.0/spark-atlas-connector-0.4.0.jar
+
+curl -L -o spark-atlas-connector-0.4.0.jar \
+  https://repo1.maven.org/maven2/org/apache/atlas/spark-atlas-connector/0.4.0/spark-atlas-connector-0.4.0.jar
+
+
+curl -L -o opentelemetry-javaagent.jar \
+  https://repo1.maven.org/maven2/io/opentelemetry/javaagent/opentelemetry-javaagent/2.4.0/opentelemetry-javaagent-2.4.0.jar
+
+
+curl -L -o jars/openlineage-spark_2.12-1.40.1.jar \
+  https://repo1.maven.org/maven2/io/openlineage/openlineage-spark_2.12/1.40.1/openlineage-spark_2.12-1.40.1.jar

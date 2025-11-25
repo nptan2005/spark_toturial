@@ -28,3 +28,33 @@ scrape_configs:
             "prometheus:9090",
             "nginx-prometheus-exporter:9113",
           ]
+  # ⚠️ THÊM SPARK METRICS ⚠️
+  # Spark Master Metrics
+  - job_name: "spark-master"
+    static_configs:
+      - targets: ["spark-master:8080"]
+    metrics_path: /metrics/master
+
+  # Spark Worker Metrics (chỉ thu thập worker đầu tiên)
+  - job_name: "spark-worker"
+    static_configs:
+      - targets: ["spark-worker:8081"]
+    metrics_path: /metrics/worker
+
+  # ⚠️ THÊM AIRFLOW METRICS ⚠️
+  # Airflow Webserver Metrics (Airflow 2.x có /metrics endpoint)
+  - job_name: "airflow-webserver"
+    static_configs:
+      - targets: ["airflow-webserver:8080"] # Port nội bộ 8080, port ngoài 8082
+    metrics_path: /metrics
+
+  # Airflow Scheduler Metrics
+  - job_name: "airflow-scheduler"
+    static_configs:
+      - targets: ["airflow-scheduler:8080"]
+    metrics_path: /metrics
+
+  # ⚠️ THÊM JAEGER METRICS ⚠️
+  - job_name: "jaeger-all-in-one"
+    static_configs:
+      - targets: ["jaeger:14269"] # Jaeger thường expose metrics trên port 14269

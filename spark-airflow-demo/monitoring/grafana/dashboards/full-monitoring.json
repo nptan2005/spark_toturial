@@ -22,10 +22,16 @@
       "gridPos": { "x": 0, "y": 1, "w": 24, "h": 6 },
       "targets": [
         {
-          "expr": "sum by (container_label_com_docker_compose_service) (rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service!=\"\"}[1m]))",
-          "legendFormat": "{{container_label_com_docker_compose_service}}"
+          "expr": "sum by (container_label_com_docker_compose_service) (rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service!=\"\"}[5m]))",
+          "legendFormat": "{{container_label_com_docker_compose_service}}",
+          "datasource": "Prometheus"
         }
-      ]
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short" 
+        }
+      }
     },
 
     {
@@ -35,10 +41,16 @@
       "gridPos": { "x": 0, "y": 7, "w": 24, "h": 6 },
       "targets": [
         {
-          "expr": "sum by (container_label_com_docker_compose_service) (container_memory_usage_bytes{container_label_com_docker_compose_service!=\"\"})",
-          "legendFormat": "{{container_label_com_docker_compose_service}}"
+          "expr": "sum by (container_label_com_docker_compose_service) (container_memory_working_set_bytes{container_label_com_docker_compose_service!=\"\"})",
+          "legendFormat": "{{container_label_com_docker_compose_service}}",
+          "datasource": "Prometheus"
         }
-      ]
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes" 
+        }
+      }
     },
 
     {
@@ -86,14 +98,23 @@
     {
       "id": 201,
       "title": "Services UP Status",
-      "type": "stat",
-      "gridPos": { "x": 0, "y": 19, "w": 24, "h": 4 },
+      "type": "table",
+      "gridPos": { "x": 0, "y": 19, "w": 24, "h": 6 },
       "targets": [
         {
-          "expr": "up{job=~\"prometheus|loki|grafana|kafka|spark.*|airflow.*|nginx-prometheus-exporter|cadvisor\"}",
-          "legendFormat": "{{job}}"
+          "expr": "up{job=~\"prometheus|loki|grafana|kafka|spark.*|airflow.*|nginx-prometheus-exporter|cadvisor|atlas|ranger|minio\"}",
+          "legendFormat": "{{job}}",
+          "datasource": "Prometheus"
         }
-      ]
+      ],
+          "options": {
+        "showHeader": true,
+        "footer": { "show": false },
+        "colorMode": "Value",
+        "mappings": [
+          { "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } }
+        ]
+      }
     },
 
  
@@ -168,8 +189,9 @@
       "gridPos": { "x": 0, "y": 39, "w": 12, "h": 6 },
       "targets": [
         {
-          "expr": "sum(count_over_time({job=~\"airflow|spark|kafka|token_service\"} |= \"ERROR\"[5m]))",
-          "legendFormat": "ERROR spike"
+          "expr": "sum by (service) (count_over_time({service=~\"airflow|spark|kafka|token_service\"} |~ \"([Ee]rror|[Ff]ail)\"[5m]))",
+          "legendFormat": "{{service}} ERROR/FAIL rate",
+          "datasource": "Loki"
         }
       ]
     },

@@ -1,4 +1,4 @@
-# Full stack compose for local dev (Spark + Jupyter + Airflow + Kafka + MinIO + Ranger + Atlas + Keycloak + Observability)
+# Full stack compose for local dev (Spark + Jupyter + Airflow + Kafka + MinIO + Ranger  + Keycloak + Observability)
 services:
   ####################
   # SPARK
@@ -22,11 +22,16 @@ services:
       - "8080"
     environment:
       - SPARK_HISTORY_OPTS=-Dspark.history.fs.logDirectory=/opt/spark/history
+      - PYSPARK_PYTHON=/usr/bin/python3.12
+      - PYSPARK_DRIVER_PYTHON=/usr/bin/python3.12
     volumes:
       - ../data:/data
       - ../logs/spark:/spark/logs
       - ../spark/jobs:/opt/spark/jobs
       - ./data/spark-history:/opt/spark/history
+      - ./images/spark/configs/metrics.properties:/opt/spark/conf/metrics.properties
+      - ./images/spark/configs/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf
+      - ./images/spark/jars/openlineage-spark_2.12-1.40.1.jar:/opt/spark/jars/openlineage-spark_2.12-1.40.1.jar
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8080/json/ || exit 1"]
       interval: 15s
@@ -61,12 +66,17 @@ services:
       - SPARK_WORKER_CORES=2
       - SPARK_WORKER_MEMORY=4g
       - SPARK_DAEMON_MEMORY=512m
+      - PYSPARK_PYTHON=/usr/bin/python3.12
+      - PYSPARK_DRIVER_PYTHON=/usr/bin/python3.12
     ports:
       - "8081:8081"   # Spark Worker Web UI
     volumes:
       - ../data:/data
       - ../logs/spark:/spark/logs
       - ../spark/jobs:/opt/spark/jobs
+      - ./images/spark/configs/metrics.properties:/opt/spark/conf/metrics.properties
+      - ./images/spark/configs/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf
+      - ./images/spark/jars/openlineage-spark_2.12-1.40.1.jar:/opt/spark/jars/openlineage-spark_2.12-1.40.1.jar
     logging:
       driver: json-file
       options:
@@ -80,6 +90,23 @@ services:
     networks:
       - spark-net
 
+  spark-history:
+    image: local/spark:3.5.1-full
+    container_name: spark-history
+    command: >
+      /opt/spark/bin/spark-class 
+      org.apache.spark.deploy.history.HistoryServer
+    ports:
+      - "18081:18080"
+    environment:
+      - SPARK_HISTORY_OPTS=-Dspark.history.fs.logDirectory=/opt/spark/history
+    volumes:
+      - ./data/spark-history:/opt/spark/history
+    networks:
+      - spark-net
+
+  
+
   ####################
   # JUPYTERLAB
   ####################
@@ -91,8 +118,12 @@ services:
     container_name: jupyterlab
     environment:
       - SPARK_MASTER=spark://spark-master:7077
-      - PYSPARK_PYTHON=python3
-      - JUPYTER_TOKEN=admin         # <--- thêm dòng này (ví dụ)
+      - PYSPARK_PYTHON=/usr/bin/python3.12
+      - PYSPARK_DRIVER_PYTHON=/usr/bin/python3.12
+      - JUPYTER_TOKEN=admin         
+      # - SPARK_EXTRA_LISTENERS=""              # <--- khóa listener
+      # - SPARK_JARS_PACKAGES=""                # <--- không tải openlineage
+      - SPARK_CONF_DIR=/home/jovyan/conf
     ports:
       - "8888:8888"
     command:
@@ -112,6 +143,7 @@ services:
       - ../data:/data
       - ../logs/jupyter:/home/jovyan/logs
       - ../workspace:/workspace
+      - ./images/jupyter/conf:/home/jovyan/conf # Thư mục config Spark
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8888 || exit 1"]
       interval: 20s
@@ -128,15 +160,15 @@ services:
   ####################
   # AIRFLOW (POSTGRES + REDIS + AIRFLOW services)
   ####################
-  postgres:
+  postgres-airflow:
     image: postgres:13
-    container_name: postgres
+    container_name: postgres-airflow
     environment:
       POSTGRES_USER: ${AIRFLOW_POSTGRES_USER:-airflow}
       POSTGRES_PASSWORD: ${AIRFLOW_POSTGRES_PASSWORD:-airflow}
       POSTGRES_DB: ${AIRFLOW_POSTGRES_DB:-airflow}
     volumes:
-      - ./data/postgres:/var/lib/postgresql/data
+      - ./data/postgres_airflow:/var/lib/postgresql/data
       - ../logs/postgres:/var/log/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${AIRFLOW_POSTGRES_USER:-airflow}"]
@@ -189,10 +221,10 @@ services:
           --email ${_AIRFLOW_WWW_USER_EMAIL:-admin@example.com} || true
     environment:
       - AIRFLOW__CORE__EXECUTOR=${EXECUTOR:-LocalExecutor}
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${AIRFLOW_POSTGRES_USER:-airflow}:${AIRFLOW_POSTGRES_PASSWORD:-airflow}@postgres/${AIRFLOW_POSTGRES_DB:-airflow}
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${AIRFLOW_POSTGRES_USER:-airflow}:${AIRFLOW_POSTGRES_PASSWORD:-airflow}@postgres-airflow/${AIRFLOW_POSTGRES_DB:-airflow}
       - AIRFLOW__CORE__FERNET_KEY=${FERNET_KEY:-dummy_fernet_key}
     depends_on:
-      postgres:
+      postgres-airflow:
         condition: service_healthy
     volumes:
       - ../airflow_home/dags:/opt/airflow/dags
@@ -211,13 +243,13 @@ services:
     image: ${AIRFLOW_IMAGE_NAME:-local/airflow:2.10.5-custom}
     container_name: airflow-webserver
     depends_on:
-      - postgres
+      - postgres-airflow
       - airflow-init
     environment:
       - AIRFLOW__CORE__EXECUTOR=${EXECUTOR:-LocalExecutor}
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${AIRFLOW_POSTGRES_USER:-airflow}:${AIRFLOW_POSTGRES_PASSWORD:-airflow}@postgres/${AIRFLOW_POSTGRES_DB:-airflow}
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${AIRFLOW_POSTGRES_USER:-airflow}:${AIRFLOW_POSTGRES_PASSWORD:-airflow}@postgres-airflow/${AIRFLOW_POSTGRES_DB:-airflow}
       # option: set luôn để backward compat
-      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${AIRFLOW_POSTGRES_USER:-airflow}:${AIRFLOW_POSTGRES_PASSWORD:-airflow}@postgres/${AIRFLOW_POSTGRES_DB:-airflow}
+      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${AIRFLOW_POSTGRES_USER:-airflow}:${AIRFLOW_POSTGRES_PASSWORD:-airflow}@postgres-airflow/${AIRFLOW_POSTGRES_DB:-airflow}
       - AIRFLOW__CORE__FERNET_KEY=${FERNET_KEY:-dummy_fernet_key}
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
       - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=True
@@ -226,6 +258,28 @@ services:
       - MINIO_LOG_BUCKET=airflow-logs
       - MINIO_ROOT_USER=${MINIO_ROOT_USER:-admin}
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-admin123}
+      - PYSPARK_PYTHON=/usr/bin/python3.12
+      - PYSPARK_DRIVER_PYTHON=/usr/bin/python3.12
+      - AIRFLOW__METRICS__STATSD_ON=False
+      - AIRFLOW__METRICS__STATSD_HOST=prometheus # Hoặc tên host khác nếu bạn dùng StatsD Exporter riêng
+      - AIRFLOW__METRICS__STATSD_PORT=9125 # Cổng StatsD
+      # THAY VÀO ĐÓ, CẤU HÌNH AIRFLOW TRỰC TIẾP EXPOSE METRICS (SIMPLE)
+      - AIRFLOW__METRICS__METRIC_CLIENT=airflow.providers.common.sql.metrics.metric_client.NoOpMetricClient # Đảm bảo không ghi đè Metric Client
+      - AIRFLOW__OPENLINEAGE__URL=http://openlineage:5000
+      - AIRFLOW__OPENLINEAGE__NAMESPACE=airflow
+      # - AIRFLOW__API__AUTH_BACKENDS=airflow.api.auth.backend.basic_auth
+      - AIRFLOW__CORE__AUTH_MANAGER=airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
+      - AIRFLOW__API__ENABLE_EXPERIMENTAL_API=True
+      - AIRFLOW__WEBSERVER__ENABLE_PROXY_FIX=True
+      - AIRFLOW__WEBSERVER__COOKIE_SECURE=False
+      - AIRFLOW__WEBSERVER__COOKIE_SAMESITE=Lax
+      - AIRFLOW__WEBSERVER__SESSION_BACKEND=filesystem
+      - AIRFLOW__WEBSERVER__SECRET_KEY=supersecret_key_for_airflow
+      - AIRFLOW__WEBSERVER__BASE_URL=http://airflow-webserver:8080
+      - AIRFLOW__WEBSERVER__CSRF_ENABLED=False
+      - AIRFLOW__WEBSERVER__SESSION_BACKEND=securecookie
+      - AIRFLOW__WEBSERVER__SECRET_KEY=910931e37077b6b8b5b7cd1e360bd6914c559b9c9521d2a3ff6b92a9be7f6180
+      - AIRFLOW__API__AUTH_BACKENDS=airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session
     command: webserver
     ports:
       - "8082:8080"
@@ -247,14 +301,35 @@ services:
     image: ${AIRFLOW_IMAGE_NAME:-local/airflow:2.10.5-custom}
     container_name: airflow-scheduler
     depends_on:
-      - postgres
+      - postgres-airflow
       - airflow-init
       - redis
     environment:
       - AIRFLOW__CORE__EXECUTOR=${EXECUTOR:-LocalExecutor}
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${AIRFLOW_POSTGRES_USER:-airflow}:${AIRFLOW_POSTGRES_PASSWORD:-airflow}@postgres/${AIRFLOW_POSTGRES_DB:-airflow}
-      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${AIRFLOW_POSTGRES_USER:-airflow}:${AIRFLOW_POSTGRES_PASSWORD:-airflow}@postgres/${AIRFLOW_POSTGRES_DB:-airflow}
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${AIRFLOW_POSTGRES_USER:-airflow}:${AIRFLOW_POSTGRES_PASSWORD:-airflow}@postgres-airflow/${AIRFLOW_POSTGRES_DB:-airflow}
+      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${AIRFLOW_POSTGRES_USER:-airflow}:${AIRFLOW_POSTGRES_PASSWORD:-airflow}@postgres-airflow/${AIRFLOW_POSTGRES_DB:-airflow}
       - AIRFLOW__CORE__FERNET_KEY=${FERNET_KEY:-dummy_fernet_key}
+      - PYSPARK_PYTHON=/usr/bin/python3.12
+      - PYSPARK_DRIVER_PYTHON=/usr/bin/python3.12
+      - AIRFLOW__METRICS__STATSD_HOST=prometheus # Hoặc tên host khác nếu bạn dùng StatsD Exporter riêng
+      - AIRFLOW__METRICS__STATSD_PORT=9125 # Cổng StatsD
+      # THAY VÀO ĐÓ, CẤU HÌNH AIRFLOW TRỰC TIẾP EXPOSE METRICS (SIMPLE)
+      - AIRFLOW__METRICS__METRIC_CLIENT=airflow.providers.common.sql.metrics.metric_client.NoOpMetricClient # Đảm bảo không ghi đè Metric Client
+      - AIRFLOW__OPENLINEAGE__URL=http://openlineage:5000
+      - AIRFLOW__OPENLINEAGE__NAMESPACE=airflow
+      # - AIRFLOW__API__AUTH_BACKENDS=airflow.api.auth.backend.basic_auth
+      - AIRFLOW__CORE__AUTH_MANAGER=airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
+      - AIRFLOW__API__ENABLE_EXPERIMENTAL_API=True
+      - AIRFLOW__WEBSERVER__ENABLE_PROXY_FIX=True
+      - AIRFLOW__WEBSERVER__COOKIE_SECURE=False
+      - AIRFLOW__WEBSERVER__COOKIE_SAMESITE=Lax
+      - AIRFLOW__WEBSERVER__SESSION_BACKEND=filesystem
+      - AIRFLOW__WEBSERVER__SECRET_KEY=supersecret_key_for_airflow
+      - AIRFLOW__WEBSERVER__BASE_URL=http://airflow-webserver:8080
+      - AIRFLOW__WEBSERVER__CSRF_ENABLED=False
+      - AIRFLOW__WEBSERVER__SESSION_BACKEND=securecookie
+      - AIRFLOW__WEBSERVER__SECRET_KEY=910931e37077b6b8b5b7cd1e360bd6914c559b9c9521d2a3ff6b92a9be7f6180
+      - AIRFLOW__API__AUTH_BACKENDS=airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session
     command: scheduler
     volumes:
       - ../airflow_home/dags:/opt/airflow/dags
@@ -274,14 +349,29 @@ services:
     image: ${AIRFLOW_IMAGE_NAME:-local/airflow:2.10.5-custom}
     container_name: airflow-dag-processor
     depends_on:
-      - postgres
+      - postgres-airflow
       - airflow-init
     environment:
       - AIRFLOW__CORE__EXECUTOR=${EXECUTOR:-LocalExecutor}
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${AIRFLOW_POSTGRES_USER:-airflow}:${AIRFLOW_POSTGRES_PASSWORD:-airflow}@postgres/${AIRFLOW_POSTGRES_DB:-airflow}
-      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${AIRFLOW_POSTGRES_USER:-airflow}:${AIRFLOW_POSTGRES_PASSWORD:-airflow}@postgres/${AIRFLOW_POSTGRES_DB:-airflow}
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${AIRFLOW_POSTGRES_USER:-airflow}:${AIRFLOW_POSTGRES_PASSWORD:-airflow}@postgres-airflow/${AIRFLOW_POSTGRES_DB:-airflow}
+      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${AIRFLOW_POSTGRES_USER:-airflow}:${AIRFLOW_POSTGRES_PASSWORD:-airflow}@postgres-airflow/${AIRFLOW_POSTGRES_DB:-airflow}
       - AIRFLOW__CORE__FERNET_KEY=${FERNET_KEY:-dummy_fernet_key}
       - AIRFLOW__SCHEDULER__STANDALONE_DAG_PROCESSOR=True
+      - AIRFLOW__OPENLINEAGE__URL=http://openlineage:5000
+      - AIRFLOW__OPENLINEAGE__NAMESPACE=airflow
+      # - AIRFLOW__API__AUTH_BACKENDS=airflow.api.auth.backend.basic_auth
+      - AIRFLOW__CORE__AUTH_MANAGER=airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
+      - AIRFLOW__API__ENABLE_EXPERIMENTAL_API=True
+      - AIRFLOW__WEBSERVER__ENABLE_PROXY_FIX=True
+      - AIRFLOW__WEBSERVER__COOKIE_SECURE=False
+      - AIRFLOW__WEBSERVER__COOKIE_SAMESITE=Lax
+      - AIRFLOW__WEBSERVER__SESSION_BACKEND=filesystem
+      - AIRFLOW__WEBSERVER__SECRET_KEY=supersecret_key_for_airflow
+      - AIRFLOW__WEBSERVER__BASE_URL=http://airflow-webserver:8080
+      - AIRFLOW__WEBSERVER__CSRF_ENABLED=False
+      - AIRFLOW__WEBSERVER__SESSION_BACKEND=securecookie
+      - AIRFLOW__WEBSERVER__SECRET_KEY=910931e37077b6b8b5b7cd1e360bd6914c559b9c9521d2a3ff6b92a9be7f6180
+      - AIRFLOW__API__AUTH_BACKENDS=airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session
     command: dag-processor
     restart: always
     volumes:
@@ -306,11 +396,11 @@ services:
       - 5555:5555
     depends_on:
       - redis
-      - postgres
+      - postgres-airflow
     environment:
       - AIRFLOW__CORE__EXECUTOR=${EXECUTOR:-LocalExecutor}
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${AIRFLOW_POSTGRES_USER:-airflow}:${AIRFLOW_POSTGRES_PASSWORD:-airflow}@postgres/${AIRFLOW_POSTGRES_DB:-airflow}
-      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${AIRFLOW_POSTGRES_USER:-airflow}:${AIRFLOW_POSTGRES_PASSWORD:-airflow}@postgres/${AIRFLOW_POSTGRES_DB:-airflow}
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${AIRFLOW_POSTGRES_USER:-airflow}:${AIRFLOW_POSTGRES_PASSWORD:-airflow}@postgres-airflow/${AIRFLOW_POSTGRES_DB:-airflow}
+      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${AIRFLOW_POSTGRES_USER:-airflow}:${AIRFLOW_POSTGRES_PASSWORD:-airflow}@postgres-airflow/${AIRFLOW_POSTGRES_DB:-airflow}
       - AIRFLOW__CORE__FERNET_KEY=${FERNET_KEY:-dummy_fernet_key}
     networks:
       - spark-net
@@ -350,55 +440,9 @@ services:
         max-file: "3"
 
   ####################
-  # KAFKA + ZOOKEEPER
+  # KAFKA CLIENT
   ####################
-  zookeeper:
-    image: zookeeper:3.7.1
-    container_name: zookeeper
-    environment:
-      - ALLOW_ANONYMOUS_LOGIN=yes
-    ports:
-      - "2181:2181"
-    volumes:
-      - ../logs/zookeeper:/opt/zookeeper/logs
-    networks:
-      - spark-net
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  kafka:
-    image: wurstmeister/kafka:2.13-2.8.1
-    container_name: kafka
-    depends_on:
-      - zookeeper
-    ports:
-      - "9092:9092"
-      - "29092:29092"
-    environment:
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-    volumes:
-      - ../logs/kafka:/opt/kafka_2.13-2.8.1/logs
-    networks:
-      - spark-net
-    deploy:
-      resources:
-        limits:
-          memory: 1g
-          cpus: "1.0"
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
-
+  
   kafka-client:
     build:
       context: ./images/kafka-client
@@ -477,62 +521,359 @@ services:
         max-file: "3"
 
   ####################
-  # RANGER & ATLAS
+  # RANGER
   ####################
-  ranger:
-    build:
-      context: ./images/ranger
-    image: local/ranger:2.3.0
-    container_name: ranger
+  # ranger:
+  #   image: ranger:latest
+  #   container_name: ranger
+  #   restart: always
+  #   environment:
+  #     DB_FLAVOR: "postgres"
+  #     SQL_CONNECTOR_JAR: "/opt/ranger/ews/webapp/WEB-INF/lib/postgresql.jar"
+
+  #     # dùng database ranger riêng
+  #     db_host: "postgres"
+  #     db_user: "airflow"
+  #     db_password: "airflow"
+  #     db_name: "ranger"
+
+  #     # tắt kerberos cho nhẹ
+  #     ranger_kerberos_support: "false"
+  #   ports:
+  #     - "6080:6080"
+  #   depends_on:
+  #     - postgres
+  #   volumes:
+  #     - ../logs/ranger:/var/log/ranger
+  #     - ../data:/data
+  #   networks:
+  #     - spark-net
+
+  # ----------------------------
+  # PostgreSQL cho OpenLineage (Marquez)
+  # ----------------------------
+  postgres:
+    image: postgres:15
+    container_name: postgres
     environment:
-      DB_FLAVOR: "postgres"
-      SQL_CONNECTOR_JAR: "/usr/share/java/postgresql.jar"
-      db_host: "postgres"
-      db_user: "${AIRFLOW_POSTGRES_USER:-airflow}"
-      db_password: "${AIRFLOW_POSTGRES_PASSWORD:-airflow}"
-    ports:
-      - "6080:6080"
-    depends_on:
-      - postgres
-      - keycloak
+      POSTGRES_USER: marquez
+      POSTGRES_PASSWORD: marquez
+      POSTGRES_DB: marquez
+    # chỉ dùng trong network docker, không cần publish port ra host
     volumes:
-      - ../data:/data
-      - ../logs/ranger:/var/log/ranger
+      - ./data/postgres_marquez:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U marquez -d marquez"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
       - spark-net
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
 
-  atlas:
-    build:
-      context: ./images/atlas
-    image: local/atlas:2.3.0
-    container_name: atlas
-    ports:
-      - "21000:21000"
+  # ----------------------------
+  # OpenLineage (Marquez server)
+  # ----------------------------
+  # start: docker compose up -d --force-recreate postgres-marquez openlineage
+  openlineage:
+    # 1. Nâng cấp Image
+    image: marquezproject/marquez:0.40.0 # <--- Đã nâng cấp!
+    # image: marquezproject/marquez:latest
+    platform: linux/amd64
+    container_name: openlineage
     depends_on:
       - postgres
-      - keycloak
+    environment:
+      # Cấu hình user:pass trực tiếp trong URL để ghi đè mọi hardcode
+      MARQUEZ_JDBC_URL: jdbc:postgresql://postgres:5432/marquez?user=marquez&password=marquez
+      
+      MARQUEZ_DB_HOST: postgres
+      MARQUEZ_DB_PORT: 5432
+      MARQUEZ_DB_USER: marquez
+      MARQUEZ_DB_PASS: marquez # Giữ lại để server API đọc sau khi migration
+      MARQUEZ_DB_NAME: marquez
+      MARQUEZ_PORT: 5000
+      MARQUEZ_ENABLE_PROMETHEUS: "true"
+      MARQUEZ_PROMETHEUS_METRICS_NAMESPACE: openlineage
+    command: ["./migrate.sh", "server"]
+    ports:
+      - "5010:5000"   
+    networks:
+      - spark-net
+
+  # ----------------------------
+  # OpenLineage UI (Marquez Web)
+  # ----------------------------
+  openlineage-ui:
+    image: marquezproject/marquez-web:latest
+    platform: linux/amd64
+    container_name: openlineage-ui
+    environment:
+      NODE_ENV: "production"
+      WEB_PORT: "3000"                      # Port UI *bên trong* container
+      MARQUEZ_HOST: "openlineage"          # Tên service của Marquez server trong cùng network
+      MARQUEZ_PORT: "5000"                 # Port nội bộ mà service openlineage đang listen
+      MARQUEZ_URL: "http://openlineage:5000"  # Quan trọng: URL đầy đủ cho API
+    ports:
+      - "3001:3000"   # http://localhost:3001
+    depends_on:
+      - openlineage
+    networks:
+      - spark-net
+
+  # ----------------------------
+  # PostgreSQL cho OpenMetadata
+  # ----------------------------
+  postgres-openmetadata:
+    image: docker.getcollate.io/openmetadata/postgresql:1.10.8
+    restart: always
+    command: "--work_mem=10MB"
+    container_name: postgres-openmetadata
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    expose:
+      - "5432"
+    ports:
+      - "5532:5432"
+    # Không cần port ra host, chỉ internal
     volumes:
-      - ../data:/data
-      - ../logs/atlas:/var/log/atlas
+      - ./data/postgres_metadata:/var/lib/postgresql/data
+    healthcheck:
+      test: psql -U postgres -tAc 'select 1' -d openmetadata_db
+      interval: 15s
+      timeout: 10s
+      retries: 10
+    networks:
+      - spark-net
+
+
+  # ----------------------------
+  # OpenMetadata server
+  # ----------------------------
+  elasticsearch:
+    container_name: openmetadata_elasticsearch
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.4
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms1024m -Xmx1024m
+      - xpack.security.enabled=false
+    networks:
+      - spark-net
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    healthcheck:
+      test: "curl -s http://localhost:9200/_cluster/health?pretty | grep status | grep -qE 'green|yellow' || exit 1"
+      interval: 15s
+      timeout: 10s
+      retries: 10
+    volumes:
+      - ./data/es-data:/usr/share/elasticsearch/data
+
+  execute-migrate-all:
+    container_name: execute_migrate_all
+    image: docker.getcollate.io/openmetadata/server:1.10.8
+    command: "./bootstrap/openmetadata-ops.sh migrate"
+    environment:
+      # OPENMETADATA_CLUSTER_NAME: openmetadata
+      SERVER_PORT: 8585
+      SERVER_ADMIN_PORT: 8586
+      LOG_LEVEL: INFO
+      DB_DRIVER_CLASS: org.postgresql.Driver
+      DB_SCHEME: postgresql
+      DB_USER: openmetadata_user
+      DB_USER_PASSWORD: openmetadata_password
+      DB_HOST: postgres-openmetadata
+      DB_PORT: 5432
+      OM_DATABASE: openmetadata_db
+      # ElasticSearch Configurations
+      ELASTICSEARCH_HOST: ${ELASTICSEARCH_HOST:- elasticsearch}
+      ELASTICSEARCH_PORT: ${ELASTICSEARCH_PORT:-9200}
+      ELASTICSEARCH_SCHEME: ${ELASTICSEARCH_SCHEME:-http}
+      ELASTICSEARCH_USER: ${ELASTICSEARCH_USER:-""}
+      ELASTICSEARCH_PASSWORD: ${ELASTICSEARCH_PASSWORD:-""}
+      SEARCH_TYPE: ${SEARCH_TYPE:- "elasticsearch"}
+      ELASTICSEARCH_TRUST_STORE_PATH: ${ELASTICSEARCH_TRUST_STORE_PATH:-""}
+      ELASTICSEARCH_TRUST_STORE_PASSWORD: ${ELASTICSEARCH_TRUST_STORE_PASSWORD:-""}
+      ELASTICSEARCH_CONNECTION_TIMEOUT_SECS: ${ELASTICSEARCH_CONNECTION_TIMEOUT_SECS:-5}
+      ELASTICSEARCH_SOCKET_TIMEOUT_SECS: ${ELASTICSEARCH_SOCKET_TIMEOUT_SECS:-60}
+      ELASTICSEARCH_KEEP_ALIVE_TIMEOUT_SECS: ${ELASTICSEARCH_KEEP_ALIVE_TIMEOUT_SECS:-600}
+      ELASTICSEARCH_BATCH_SIZE: ${ELASTICSEARCH_BATCH_SIZE:-100}
+      ELASTICSEARCH_PAYLOAD_BYTES_SIZE: ${ELASTICSEARCH_PAYLOAD_BYTES_SIZE:-10485760}   #max payLoadSize in Bytes
+      ELASTICSEARCH_INDEX_MAPPING_LANG: ${ELASTICSEARCH_INDEX_MAPPING_LANG:-EN}
+
+      #eventMonitoringConfiguration
+      EVENT_MONITOR: ${EVENT_MONITOR:-prometheus}
+      EVENT_MONITOR_BATCH_SIZE: ${EVENT_MONITOR_BATCH_SIZE:-10}
+      EVENT_MONITOR_PATH_PATTERN: ${EVENT_MONITOR_PATH_PATTERN:-["/api/v1/tables/*", "/api/v1/health-check"]}
+      EVENT_MONITOR_LATENCY: ${EVENT_MONITOR_LATENCY:-[]}
+      #pipelineServiceClientConfiguration
+      PIPELINE_SERVICE_CLIENT_ENABLED: ${PIPELINE_SERVICE_CLIENT_ENABLED:-true}
+      PIPELINE_SERVICE_CLIENT_CLASS_NAME: ${PIPELINE_SERVICE_CLIENT_CLASS_NAME:-"org.openmetadata.service.clients.pipeline.airflow.AirflowRESTClient"}
+      PIPELINE_SERVICE_IP_INFO_ENABLED: ${PIPELINE_SERVICE_IP_INFO_ENABLED:-false}
+      PIPELINE_SERVICE_CLIENT_HOST_IP: ${PIPELINE_SERVICE_CLIENT_HOST_IP:-""}
+      PIPELINE_SERVICE_CLIENT_SECRETS_MANAGER_LOADER: ${PIPELINE_SERVICE_CLIENT_SECRETS_MANAGER_LOADER:-"noop"}
+      #airflow parameters
+      AIRFLOW_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME:-admin}
+      AIRFLOW_PASSWORD: ${_AIRFLOW_WWW_USER_PASSWORD:-admin}
+      AIRFLOW_TIMEOUT: ${AIRFLOW_TIMEOUT:-10}
+      AIRFLOW_TRUST_STORE_PATH: ${AIRFLOW_TRUST_STORE_PATH:-""}
+      AIRFLOW_TRUST_STORE_PASSWORD: ${AIRFLOW_TRUST_STORE_PASSWORD:-""}
+      FERNET_KEY: ${FERNET_KEY:-dummy_fernet_key}
+
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      postgres-openmetadata:
+        condition: service_healthy
+    networks:
+      - spark-net
+
+  openmetadata:
+    restart: always
+    image: docker.getcollate.io/openmetadata/server:1.10.8
+    container_name: openmetadata
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      postgres-openmetadata:
+        condition: service_healthy
+      execute-migrate-all:
+        condition: service_completed_successfully
+      minio:
+        condition: service_healthy
+    environment:
+      SERVER_PORT: 8585
+      SERVER_ADMIN_PORT: 8586
+      LOG_LEVEL: INFO
+      SERVER_HOST_API_URL: http://openmetadata-server:8585/api
+      #Database configuration for postgresql
+      DB_DRIVER_CLASS: org.postgresql.Driver
+      DB_SCHEME: postgresql
+      # DB_PARAMS: ${DB_PARAMS:-allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC}
+      DB_USER: openmetadata_user
+      DB_USER_PASSWORD: openmetadata_password
+      DB_HOST: postgres-openmetadata
+      DB_PORT: 5432
+      OM_DATABASE: openmetadata_db
+      #eventMonitoringConfiguration
+      EVENT_MONITOR: prometheus
+      EVENT_MONITOR_BATCH_SIZE: 10
+      EVENT_MONITOR_PATH_PATTERN: ${EVENT_MONITOR_PATH_PATTERN:-["/api/v1/tables/*", "/api/v1/health-check"]}
+      EVENT_MONITOR_LATENCY: ${EVENT_MONITOR_LATENCY:-[]}
+      # ElasticSearch Configurations
+      ELASTICSEARCH_HOST: ${ELASTICSEARCH_HOST:- elasticsearch}
+      ELASTICSEARCH_PORT: ${ELASTICSEARCH_PORT:-9200}
+      ELASTICSEARCH_SCHEME: ${ELASTICSEARCH_SCHEME:-http}
+      ELASTICSEARCH_USER: ${ELASTICSEARCH_USER:-""}
+      ELASTICSEARCH_PASSWORD: ${ELASTICSEARCH_PASSWORD:-""}
+      SEARCH_TYPE: ${SEARCH_TYPE:- "elasticsearch"}
+      ELASTICSEARCH_TRUST_STORE_PATH: ${ELASTICSEARCH_TRUST_STORE_PATH:-""}
+      ELASTICSEARCH_TRUST_STORE_PASSWORD: ${ELASTICSEARCH_TRUST_STORE_PASSWORD:-""}
+      ELASTICSEARCH_CONNECTION_TIMEOUT_SECS: ${ELASTICSEARCH_CONNECTION_TIMEOUT_SECS:-5}
+      ELASTICSEARCH_SOCKET_TIMEOUT_SECS: ${ELASTICSEARCH_SOCKET_TIMEOUT_SECS:-60}
+      ELASTICSEARCH_KEEP_ALIVE_TIMEOUT_SECS: ${ELASTICSEARCH_KEEP_ALIVE_TIMEOUT_SECS:-600}
+      ELASTICSEARCH_BATCH_SIZE: ${ELASTICSEARCH_BATCH_SIZE:-100}
+      ELASTICSEARCH_PAYLOAD_BYTES_SIZE: ${ELASTICSEARCH_PAYLOAD_BYTES_SIZE:-10485760}   #max payLoadSize in Bytes
+      ELASTICSEARCH_INDEX_MAPPING_LANG: ${ELASTICSEARCH_INDEX_MAPPING_LANG:-EN}
+      #pipelineServiceClientConfiguration
+      PIPELINE_SERVICE_CLIENT_ENABLED: ${PIPELINE_SERVICE_CLIENT_ENABLED:-true}
+      PIPELINE_SERVICE_CLIENT_CLASS_NAME: ${PIPELINE_SERVICE_CLIENT_CLASS_NAME:-"org.openmetadata.service.clients.pipeline.airflow.AirflowRESTClient"}
+      PIPELINE_SERVICE_IP_INFO_ENABLED: ${PIPELINE_SERVICE_IP_INFO_ENABLED:-false}
+      PIPELINE_SERVICE_CLIENT_HOST_IP: ${PIPELINE_SERVICE_CLIENT_HOST_IP:-""}
+      PIPELINE_SERVICE_CLIENT_SECRETS_MANAGER_LOADER: ${PIPELINE_SERVICE_CLIENT_SECRETS_MANAGER_LOADER:-"noop"}
+      #airflow parameters
+      AIRFLOW_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME:-admin}
+      AIRFLOW_PASSWORD: ${_AIRFLOW_WWW_USER_PASSWORD:-admin}
+      AIRFLOW_TIMEOUT: ${AIRFLOW_TIMEOUT:-10}
+      AIRFLOW_TRUST_STORE_PATH: ${AIRFLOW_TRUST_STORE_PATH:-""}
+      AIRFLOW_TRUST_STORE_PASSWORD: ${AIRFLOW_TRUST_STORE_PASSWORD:-""}
+      FERNET_KEY: ${FERNET_KEY:-dummy_fernet_key}
+    expose:
+      - 8585
+      - 8586
+    ports:
+      - "8585:8585"
+      - "8586:8586"
     networks:
       - spark-net
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:21000/ || exit 1"]
-      interval: 20s
-      timeout: 5s
-      retries: 6
-      start_period: 30s
+      test: [ "CMD", "wget", "-q", "--spider",  "http://localhost:8586/healthcheck" ]
+
+
+
+
+  ####################
+  # ZOOKEEPER
+  ####################
+  zookeeper:
+    image: zookeeper:3.7.1
+    container_name: zookeeper
+    restart: always
+    environment:
+      ALLOW_ANONYMOUS_LOGIN: "yes"
+    ports:
+      - "2181:2181"
+    networks:
+      - spark-net
+
+  ####################
+  # KAFKA
+  ####################
+  kafka:
+    image: wurstmeister/kafka:2.13-2.8.1
+    container_name: kafka
+    restart: always
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - spark-net 
+
+  token-service:
+    build:
+      context: ./images/token-service
+    image: local/token-service:latest
+    container_name: token-service
+    depends_on:
+      - kafka
+    ports:
+      - "5001:5000"           # host: http://localhost:5001
+    environment:
+      # em muốn thêm env gì thì thêm vào đây
+      # ví dụ:
+      # LOG_LEVEL: INFO
+      JAEGER_ENDPOINT: http://jaeger:4317
+    volumes:
+      - ../logs/token-service:/app/logs
+    networks:
+      - spark-net
     logging:
       driver: json-file
       options:
         max-size: "10m"
         max-file: "3"
-
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: jaeger
+    ports:
+      - "16686:16686" # Web UI
+      - "14268:14268" # HTTP Collector
+      - "4317:4317"   # OTLP gRPC cho OpenTelemetry
+    command:
+      - "--collector.otlp.enabled=true"
+      - "--collector.otlp.grpc.host-port=0.0.0.0:4317"
+    networks:
+      - spark-net
   ####################
   # ACCESS PROXY (nginx)
   ####################

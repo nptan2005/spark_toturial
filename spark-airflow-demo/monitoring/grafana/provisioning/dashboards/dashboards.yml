@@ -1,12 +1,22 @@
+# ./monitoring/grafana/provisioning/dashboards/dashboards.yml
+
 apiVersion: 1
 
 providers:
-  - name: "default"
+  - name: "Docker Monitoring"
     orgId: 1
-    folder: ""
+    folder: "General Observability"
     type: file
     disableDeletion: false
-    allowUiUpdates: true
-    updateIntervalSeconds: 10
+    editable: true
     options:
-      path: /var/lib/grafana/dashboards
+      path: /var/lib/grafana/dashboards # Đường dẫn trong container Grafana
+
+  - name: "Data Platform"
+    orgId: 1
+    folder: "Data Platform"
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards/data_platform # Nếu bạn muốn các dashboard chuyên biệt nằm trong thư mục con

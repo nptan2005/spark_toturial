@@ -1,0 +1,60 @@
+body{
+	font-size: 10pt; 
+  font-family:"Tahoma","sans-serif";
+}
+
+/* Add to ~/.ipython/profile_default/static/custom/custom.css */
+
+/* Pretty Pandas Dataframes */
+.dataframe * {border-color: #c0c0c0 !important;}
+.dataframe th{background: #eee;}
+.dataframe td{text-align: right; min-width:5em;}
+
+/* Format summary rows */
+.dataframe-summary-row tr:last-child,
+.dataframe-summary-col td:last-child{
+    background: #eee;
+    font-weight: 500;
+}
+
+b {
+  font-size: 9pt
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th {
+  text-align: center;
+  padding: 8px;
+}
+
+td {
+  text-align: left;
+  padding: 8px;
+}
+
+tr:nth-child(even){background-color: #FFD5D5}
+
+th {
+  background-color: #99D5FC;
+  font-weight:bold;
+  text-align: center;
+}
+.tan {
+  border-collapse: collapse; 
+  border: 1px solid #211F21;
+
+}
+
+.tan > tr:nth-child(even) {
+    background: #E2F2FD;
+}
+
+.tan > tr:hover {
+    background: silver;
+    cursor: pointer;
+}
+

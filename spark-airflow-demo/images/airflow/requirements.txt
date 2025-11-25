@@ -19,6 +19,8 @@ celery>=5.3.0
 pyspark==3.5.1
 requests
 boto3
+logging
+xlsxwriter
 
 # Drivers
 cx_Oracle

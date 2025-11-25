@@ -1,0 +1,110 @@
+file_path:
+  FILE_IMPORT_DEFAULT:
+    root: Data
+    path: Import_Data
+  FILE_EXPORT_DEFAULT:
+    root: Data
+    path: Export_Data
+  EMAIL_ATTACH_DEFAULT:
+    root: Data
+    path: Attachment_Data
+  ARCHIVE_IMPORT:
+    root: Archived
+    path: Archived_Import
+  ARCHIVE_EXPORT:
+    root: Archived
+    path: Archived_Export
+  ARCHIVE_ATTACH:
+    root: Archived
+    path: Archived_Attachment
+  ARCHIVE_SFTP:
+    root: Archived
+    path: Archived_SFTP
+  EMAIL_TEMPLATE:
+    root: configurable
+    path: email_template
+    file: defaultTemplate.html
+email:
+  EMAIL_PERSONAL:
+    host: mail.bvbank.net.vn
+    port: 465
+    email: tannp@bvbank.net.vn
+    password: RU1BSUxfREVGQVVMVA==
+    is_ssl: true
+    password_authen: true
+    is_debug: false
+    mail_list:
+      - tannp@bvbank.net.vn
+  EMAIL_NO_REPLY:
+    host: ironport.bvbank.net.vn
+    port: 25
+    email: noreply@bvbank.net.vn
+    password: Tk9fUEFTU1dPUkQ=
+    is_ssl: false
+    password_authen: false
+    is_debug: false
+    mail_list:
+      - tannp@bvbank.net.vn
+  EMAIL_DEFAULT:
+    host: mail.bvbank.net.vn
+    port: 465
+    email: card-report@bvbank.net.vn
+    password: Q0FSRF9SRVBPUlRfRU1BSUw=
+    is_ssl: true
+    password_authen: true
+    is_debug: false
+    mail_list:
+      - tannp@bvbank.net.vn
+
+sftp:
+  SFTP_ACQ_POS:
+    host: sftp-uat.bvbank.net.vn
+    port: 2022
+    username: ACQPOS-VPBANK-UAT
+    password: U0ZUUF9BQ1FfUE9T
+  SFTP_FOR_ATOM:
+    host: sftp-uat.bvbank.net.vn
+    port: 2022
+    username: atom
+    password: U0ZUUF9GT1JfQVRPTQ==
+  SFTP_ACQ_MOMO_RECON:
+    host: sftp-partner.bvbank.net.vn
+    port: 2022
+    username: momo_reconciliation
+    password: bW9tb19yZWNvbmNpbGlhdGlvbg==
+    # tab: momo_reconciliation
+postgre_database:
+  DIGI_POSTGRE_MMS:
+    host: 172.26.1.32
+    port: 5432
+    database: bvbank_prod_mms
+    username: readdw
+    password: RElHSV9QT1NUR1JF
+  DIGI_POSTGRE_MDP:
+    host: 172.26.1.32
+    port: 5432
+    database: bvbank_prod_mdp
+    username: readdw
+    password: RElHSV9QT1NUR1JF
+oracle_database:
+  DW:
+    host: 172.29.5.2
+    port: 1521
+    service_name: DWTEST
+    username: DW
+    password: REJfT1JBQ0xFX0RX
+    tns: DWTEST
+  BW:
+    host: 172.29.5.15
+    port: 1521
+    service_name: BWCHECK
+    username: BW3
+    password: REJfT1JBQ0xFX0JX
+    tns: BW_DEV
+  OMNI:
+    host: 172.29.5.41
+    port: 1521
+    service_name: omnichaneluat
+    username: vccbomnichanel
+    password: REJfT1JBQ0xFX09NTkk=
+    tns: BW_DEV

@@ -1,0 +1,452 @@
+export_template:
+  ACQ_POS_ACCOUNTING_REPORT:
+    file_extension: "xlsx"
+    separate: "|"
+    sftp_conn: "SFTP_ACQ_POS"
+    sftp_move: true
+    sheets:
+      ACQ_BANK:
+        is_header: true
+        sheet_title_name: "TỔNG HỢP THANH QUYẾT TOÁN THEO ACQ BANK"
+        sheet_name: "Tổng hợp ACQ"
+        is_format: true
+        column_mapping:
+          "NO": "STT"
+          "RPT_SESSION": "Phiên HT"
+          "ACQ_BANK": "ACQ BANK"
+          "NUM_OF_TXN": "Số lượng GD"
+          "TXN_AMT": "Số tiền GD"
+          "SHARE_FEE": "Phí chia sẻ ACQ Bank (đã VAT)"
+          "BVB_AMT": "Số tiền BVBank được báo có"
+      MERCHANT:
+        is_header: true
+        sheet_title_name: "TỔNG HỢP THANH QUYẾT TOÁN THEO ĐƠN VỊ CHẤP NHẬN THẺ"
+        sheet_name: "Tổng hợp DVCNT"
+        is_format: true
+        column_mapping:
+          "NO": "STT"
+          "RPT_SESSION": "Phiên HT"
+          "MERCHANT_NAME": "TÊN ĐVCNT"
+          "MID": "MID"
+          "TID": "TID"
+          "NUM_OF_TXN": "Số lượng GD"
+          "TXN_AMT": "Số tiền GD"
+          "DISCOUNT_AMT": "Phí chiết khấu (đã VAT)"
+          "MERCHANT_CREDIT_AMT": "Số tiền báo có ĐVCNT"
+          "ACCOUNT_NUMBER": "Số tài khoản báo có"
+          "ACCOUNT_NAME": "Tên tài khoản báo có"
+      ACCOUNTING:
+        is_header: true
+        sheet_title_name: "BÁO CÁO SỐ TIỀN HẠCH TOÁN DỰ KIẾN"
+        sheet_name: "Tổng hạch toán"
+        is_format: false
+        column_mapping:
+          "NO": "STT"
+          "RPT_SESSION": "Phiên HT"
+          "GROUP_NAME": "Nhóm"
+          "PRIORITY": "Thứ tự"
+          "DESCRIPTION": "Thuyết minh bút toán"
+          "POSTING_DATE": "Ngày hạch toán"
+          "DEBIT_BRANCH_CODE": "Mã đơn vị ghi nợ"
+          "DEBIT_ACCOUNT_NUMBER": "Tài khoản ghi nợ"
+          "DEBIT_ACCOUNT_NAME": "Tên tài khoản ghi nợ"
+          "CURRENCY": "Loại tiền"
+          "POSTING_AMT": "Số tiền"
+          "CREDIT_BRANCH_CODE": "Mã đơn vị ghi có"
+          "CREDIT_ACCOUNT_NUMBER": "Tài khoản ghi có"
+          "CREDIT_ACCOUNT_NAME": "Tên tài khoản ghi có"
+          "NARRATIVE": "Diễn giải"
+      FC_STATUS:
+        is_header: true
+        sheet_title_name: "KẾT QUẢ HẠCH TOÁN"
+        sheet_name: "Kết quả hạch toán"
+        is_format: false
+        column_mapping:
+          "PHIEN": "Phiên HT"
+          "NHOM HT": "Nhóm"
+          "THU TU HT": "Thứ tự"
+          "BatchID": "BatchID"
+          "NGAY HT": "Ngày hạch toán"
+          "BRANCH TK NO": "Mã đơn vị ghi nợ"
+          "TK NO": "Tài khoản ghi nợ"
+          "TEN TK NO": "Tên tài khoản ghi nợ"
+          "CURRENCY": "Loại tiền"
+          "SO TIEN": "Số tiền"
+          "BRANCH TK CO": "Mã đơn vị ghi có"
+          "SO TK CO": "Tài khoản ghi có"
+          "TEN TK CO": "Tên tài khoản ghi có"
+          "NARRATIVE": "Diễn giải"
+          "KET QUA": "Trạng thái hạch toán"
+          "FC_RESULTDESC": "Mô tả lỗi"
+          "SO LAN HT": "Số lần hạch toán"
+      DUPLICATE:
+        is_header: true
+        sheet_title_name: "BÁO CÁO IMPORT TRÙNG (KHÔNG TRÙNG - SHEET KHÔNG CÓ DỮ LIỆU)"
+        sheet_name: "DUPLICATE"
+        is_format: false
+        column_mapping:
+          "acq_bank_code": "Mã ACQ Bank"
+          "retrieval_ref_no": "Số tham chiếu (F37)"
+          "txn_id": "Transaction ID"
+          "CN": "Số lượng trùng"
+      INVALID_ACCT:
+        is_header: true
+        sheet_title_name: "BÁO CÁO TÀI KHOẢN SAI (KHÔNG SAI - SHEET KHÔNG CÓ DỮ LIỆU)"
+        sheet_name: "INVALID_ACCT"
+        is_format: true
+        column_mapping:
+          "txn_id": "Transaction ID"
+          "acq_bank_code": "Mã ACQ Bank"
+          "MERCHANT_NAME": "Tên merchant"
+          "MERCHANT_ID": "MID"
+          "TERMINAL_ID": "TID"
+          "CARD_NUMBER": "Số thẻ"
+          "retrieval_ref_no": "Số tham chiếu (F37)"
+          "REQUEST_AMOUNT": "Số tiền"
+          "ACCOUNT_NUMBER": "SỐ TK báo có (DIGI)"
+          "ACCOUNT_NAME": "Tên TK báo có (DIGI)"
+          "FC_ACCOUNT_NAME": "Tên TK FC"
+          "NOTE": "Kết quả kiểm tra"
+      RECON_IMP_VS_SYNC:
+        is_header: true
+        sheet_title_name: "BÁO CÁO ĐỐI CHIẾU GIỮA DỮ LIỆU IMPORT SO VỚI DỮ LIỆU ĐỒNG BỘ"
+        sheet_name: "IMP_VS_SYNC"
+        is_format: true
+        column_mapping: {}
+      RECON_SYNC_VS_IMP:
+        is_header: true
+        sheet_title_name: "BÁO CÁO ĐỐI CHIẾU GIỮA DỮ LIỆU VỚI DỮ LIỆU ĐỒNG BỘ SO IMPORT"
+        sheet_name: "SYNC_VS_IMP"
+        is_format: true
+        column_mapping: {}
+  ATOM_UPDATE_ACCOUNT_STATUS:
+    file_extension: "xlsx"
+    separate: "|"
+    sftp_conn: "SFTP_ACQ_POS"
+    sftp_move: false
+    sheets:
+      DATA:
+        is_header: true
+        sheet_title_name: ""
+        sheet_name: "DATA"
+        is_format: false
+        column_mapping:
+          "NO": "STT"
+          "TXN_ID": "TxnID"
+          "MID": "MID"
+          "TID": "TID"
+          "AUTH_ID_REPONSE": "Mã chuẩn chi"
+          "RETRIEVAL_REF_NO": "Số tham chiếu (F37)"
+          "REQUEST_AMOUNT": "Số tiền GD"
+          "POSTING_DATE": "Ngày báo có"
+  ACQ_TXN_BVB_ACCT_REPORT:
+    file_extension: "xlsx"
+    separate: "|"
+    sftp_conn: "SFTP_ACQ_POS"
+    sftp_move: true
+    sheets:
+      ACQ_BANK:
+        is_header: true
+        sheet_title_name: "TỔNG HỢP THANH QUYẾT TOÁN THEO ACQ BANK"
+        sheet_name: "Tổng hợp ACQ"
+        is_format: true
+        column_mapping:
+          "NO": "STT"
+          "RPT_SESSION": "Phiên HT"
+          "ACQ_BANK": "ACQ BANK"
+          "CHANNEL": "CHANNEL"
+          "NUM_OF_TXN": "Số lượng GD"
+          "TXN_AMT": "Số tiền GD"
+          "SHARE_FEE": "Phí chia sẻ ACQ Bank (đã VAT)"
+          "BVB_AMT": "Số tiền BVBank được báo có"
+      CHANNEL:
+        is_header: true
+        sheet_title_name: "TỔNG HỢP THANH QUYẾT TOÁN THEO KÊNH LIÊN KẾT"
+        sheet_name: "Tổng theo kênh"
+        is_format: true
+        column_mapping:
+          "NO": "STT"
+          "RPT_SESSION": "Phiên HT"
+          "CHANNEL": "CHANNEL"
+          "REFCODE": "REFCODE"
+          "ACCOUNT_NUMBER": "Số tài khoản báo có"
+          "ACCOUNT_NAME": "Tên tài khoản báo có"
+          "NUM_OF_TXN": "Số lượng GD"
+          "TXN_AMT": "Số tiền GD"
+          "DISCOUNT_AMT": "Phí chiết khấu (đã VAT)"
+          "MERCHANT_CREDIT_AMT": "Số tiền báo có ĐVCNT"
+      MERCHANT:
+        is_header: true
+        sheet_title_name: "TỔNG HỢP THANH QUYẾT TOÁN THEO ĐƠN VỊ CHẤP NHẬN THẺ"
+        sheet_name: "Tổng hợp DVCNT"
+        is_format: true
+        column_mapping:
+          "NO": "STT"
+          "RPT_SESSION": "Phiên HT"
+          "CHANNEL": "CHANNEL"
+          "REFCODE": "RefCode"
+          "MERCHANT_NAME": "TÊN ĐVCNT"
+          "MID": "MID"
+          "TID": "TID"
+          "NUM_OF_TXN": "Số lượng GD"
+          "TXN_AMT": "Số tiền GD"
+          "DISCOUNT_AMT": "Phí chiết khấu (đã VAT)"
+          "MERCHANT_CREDIT_AMT": "Số tiền báo có ĐVCNT"
+          "ACCOUNT_NUMBER": "Số tài khoản báo có"
+          "ACCOUNT_NAME": "Tên tài khoản báo có"
+      ACCOUNTING:
+        is_header: true
+        sheet_title_name: "BÁO CÁO SỐ TIỀN HẠCH TOÁN DỰ KIẾN"
+        sheet_name: "Tổng hạch toán"
+        is_format: false
+        column_mapping:
+          "NO": "STT"
+          "RPT_SESSION": "Phiên HT"
+          "CHANNEL": "CHANNEL"
+          "GROUP_NAME": "Nhóm"
+          "PRIORITY": "Thứ tự"
+          "DESCRIPTION": "Thuyết minh bút toán"
+          "POSTING_DATE": "Ngày hạch toán"
+          "DEBIT_BRANCH_CODE": "Mã đơn vị ghi nợ"
+          "DEBIT_ACCOUNT_NUMBER": "Tài khoản ghi nợ"
+          "DEBIT_ACCOUNT_NAME": "Tên tài khoản ghi nợ"
+          "CURRENCY": "Loại tiền"
+          "POSTING_AMT": "Số tiền"
+          "CREDIT_BRANCH_CODE": "Mã đơn vị ghi có"
+          "CREDIT_ACCOUNT_NUMBER": "Tài khoản ghi có"
+          "CREDIT_ACCOUNT_NAME": "Tên tài khoản ghi có"
+          "NARRATIVE": "Diễn giải"
+      FC_STATUS:
+        is_header: true
+        sheet_title_name: "KẾT QUẢ HẠCH TOÁN"
+        sheet_name: "Kết quả hạch toán"
+        is_format: false
+        column_mapping:
+          "PHIEN": "Phiên HT"
+          "NHOM HT": "Nhóm"
+          "THU TU HT": "Thứ tự"
+          "CHANNEL": "CHANNEL"
+          "NGAY HT": "Ngày hạch toán"
+          "BRANCH TK NO": "Mã đơn vị ghi nợ"
+          "TK NO": "Tài khoản ghi nợ"
+          "TEN TK NO": "Tên tài khoản ghi nợ"
+          "CURRENCY": "Loại tiền"
+          "SO TIEN": "Số tiền"
+          "BRANCH TK CO": "Mã đơn vị ghi có"
+          "SO TK CO": "Tài khoản ghi có"
+          "TEN TK CO": "Tên tài khoản ghi có"
+          "NARRATIVE": "Diễn giải"
+          "KET QUA": "Trạng thái hạch toán"
+          "FC_RESULTDESC": "Mô tả lỗi"
+          "SO LAN HT": "Số lần hạch toán"
+          "RRN": "RRN"
+          "FC_REF": "FC_REF"
+      DETAIL:
+        is_header: true
+        sheet_title_name: "CHI TIẾT GIAO DỊCH BÁO CÓ"
+        sheet_name: "Chi tiết"
+        is_format: false
+        column_mapping:
+          "NO": "STT"
+          "CHANNEL": "Kênh"
+          "RPT_SESSION": "Phiên"
+          "ACQ_BANK_CODE": "Ngân hàng chấp nhận"
+          "REFCODE": "RefCode"
+          "MERCHANT_NAME": "MERCHANT NAME"
+          "MID": "MID"
+          "TID": "TID"
+          "CARD_NUMBER": "Số thẻ"
+          "REQUESTED_AMOUNT": "Số tiền"
+          "CARD_BRAND": "Loại thẻ"
+          "CARD_TYPE_DETAIL": "Chi tiết thẻ"
+          "RETRIEVAL_REFERENCE": "Mã tham chiếu"
+          "MCC": "MCC"
+          "TRANSACTION_DATE": "Ngày giao dịch"
+          "SETTLEMENT_DATE": "Ngày kết toán"
+          "MDR_CODE": "Mã MDR"
+          "MERCHANT_FEE_RATE": "Merchant Fee Rate"
+          "ACQ_BANK_FEE": "ACQ Bank Fee"
+          "BVB_CREDIT_AMT": "Số tiền báo có BVBank"
+          "MERCHANT_CREDIT_AMT": "Số tiền báo có Merchant"
+          "DISCOUNT_AMT": "Phí"
+          "ACCOUNT_NUMBER": "STK Báo có"
+          "ACCOUNT_NAME": "Tên TK báo có"
+          "TRANG_THAI_BAO_CO": "Trạng thái báo có"
+          "POSTING_DATE": "Ngày báo có"
+  ACQ_SOUND_BOX_FEE:
+    file_extension: "xlsx"
+    separate: "|"
+    sftp_conn: "SFTP_ACQ_SERVICE_FEE"
+    sftp_move: true
+    sheets:
+      SOUND_BOX:
+        is_header: true
+        sheet_title_name: "BÁO CÁO THU PHÍ SOUND BOX (TỔNG HỢP THEO HẠCH TOÁN)"
+        sheet_name: "SOUND_BOX"
+        is_format: true
+        column_mapping:
+          "STT": "STT"
+          "IMPORT_DATE": "Ngày Import"
+          "MERCHANT_NAME": "Tên Merchant"
+          "BRANCH_CODE": "Mã ĐVKD"
+          "BRANCH_NAME": "Tên ĐVKD"
+          "ACCT_NUMBER": "Số tài khoản Merchant"
+          "FEE_GL_ACCT": "GL Thu phí"
+          "FEE_VAT_ACCT": "Tài khoản VAT"
+          "FEE_AMOUNT": "Phí"
+          "FEE_VAT_AMT": "VAT"
+          "FEE_TOTAL_AMT": "Tổng Nợ Merchant"
+          "RE_POSTING_NUM": "Số ngày thu lại"
+          "RRN": "RRN"
+          "POSTING_DATE": "Ngày post fee"
+          "FIRST_FEE_DATE": "Ngày xử lí lần đầu"
+          "FC_RESULTCODE": "Mã HT"
+          "FC_RESULTDESC": "Diễn giải HT"
+          "FC_REF": "FC REF"
+          "RUN_NUMBER": "Retry"
+      SOUND_BOX_DETAIL:
+        is_header: true
+        sheet_title_name: "BÁO CÁO THU PHÍ SOUND BOX (CHI TIẾT THEO THIẾT BỊ)"
+        sheet_name: "SOUND_BOX_DETAIL"
+        is_format: true
+        column_mapping:
+          "STT": "STT"
+          "IMPORT_DATE": "Ngày Import"
+          "MERCHANT_NAME": "Tên Merchant"
+          "SERIAL_NO": "Serial No"
+          "SERVICE_TYPE": "Loại dịch vụ "
+          "SERVICE_STATUS": "Trạng thái"
+          "DEVICE_REG_STATUS": "Đăng ký thiết bị"
+          "HAND_OVER_STATUS": "Trạng thái giao thiết bị"
+          "DIGI_ACT_DATE": "Ngày kích hoạt Digistore Merchant"
+          "BRANCH_CODE": "Mã ĐVKD"
+          "BRANCH_NAME": "Tên ĐVKD"
+          "ACCT_NUMBER": "Số tài khoản Merchant"
+          "FEE_AMOUNT": "Phí"
+          "FEE_VAT_AMT": "VAT"
+          "FEE_TOTAL_AMT": "Tổng Nợ Merchant"
+          "RRN": "RRN"
+          "POSTING_DATE": "Ngày post fee"
+          "FIRST_FEE_DATE": "Ngày xử lí lần đầu"
+          "FC_RESULTCODE": "Mã HT"
+          "FC_RESULTDESC": "Diễn giải HT"
+          "FC_REF": "FC REF"
+          "RUN_NUMBER": "Retry"
+      DUPLICATE:
+        is_header: true
+        sheet_title_name: "BÁO CÁO IMPORT TRÙNG (KHÔNG TRÙNG - SHEET KHÔNG CÓ DỮ LIỆU)"
+        sheet_name: "DUPLICATE"
+        is_format: false
+        column_mapping:
+          "SERIAL_NO": "Serial Number"
+          "CN": "Số lượng trùng"
+  PAYOO_RECON:
+    file_extension: "xlsx"
+    separate: "|"
+    sftp_conn: "SFTP_ACQ_PAYOO"
+    sftp_move: true
+    sheets:
+      DATA:
+        is_header: true
+        sheet_title_name: ""
+        sheet_name: "DATA"
+        is_format: true
+        column_mapping: {}
+  RESULT_CREATE_MS_MERCHANT:
+    file_extension: "xlsx"
+    separate: "|"
+    sftp_conn: "SFTP_ACQ_TID_MID"
+    sftp_move: true
+    sheets:
+      DATA:
+        is_header: true
+        sheet_title_name: "DANH SÁCH MASTER MERCHANT"
+        sheet_name: "DATA"
+        is_format: true
+        column_mapping: {}
+  RESULT_CREATE_REFCODE:
+    file_extension: "xlsx"
+    separate: "|"
+    sftp_conn: "SFTP_ACQ_TID_MID"
+    sftp_move: true
+    sheets:
+      DATA:
+        is_header: true
+        sheet_title_name: "DANH SÁCH REFCODE"
+        sheet_name: "DATA"
+        is_format: true
+        column_mapping: {}
+  RESULT_CREATE_TID_MID:
+    file_extension: "xlsx"
+    separate: "|"
+    sftp_conn: "SFTP_ACQ_TID_MID"
+    sftp_move: true
+    sheets:
+      MID_TID:
+        is_header: true
+        sheet_title_name: "DANH SÁCH TID-MID"
+        sheet_name: "MID_TID"
+        is_format: true
+        column_mapping: {}
+      MS_MERCHANT:
+        is_header: true
+        sheet_title_name: "DANH SÁCH MASTER MERCHANT"
+        sheet_name: "MS_MERCHANT"
+        is_format: true
+        column_mapping: {}
+      REFCODE:
+        is_header: true
+        sheet_title_name: "DANH SÁCH REFCODE"
+        sheet_name: "REFCODE"
+        is_format: true
+        column_mapping: {}
+  RESULT_MOMO_RECONC:
+    file_extension: "xlsx"
+    separate: "|"
+    sftp_conn: "SFTP_ACQ_POS"
+    sftp_move: true
+    sheets:
+      TXN:
+        is_header: true
+        sheet_title_name: "BÁO CÁO GIAO DỊCH H2H CHÊNH LỆCH GIỮA MOMO VÀ BVBANK"
+        sheet_name: "TXN"
+        is_format: true
+        column_mapping:
+          "No": "STT"
+          "TXN_TYPE": "Loại GD"
+          "TXN_DATE": "Ngày GD"
+          "ACCT_TYPE": "MS.Phân loại/STK TTD" 
+          "RRN": "MS.Mã HĐơn/ REF_BW" 
+          "TXN_ID": "MS.TransID/ TID"
+          "AMOUNT": "Số tiền"
+          "Ref_FC": "Ref_FC"
+          "Result_code": "Mã kết quả"
+          "Note": "Ghi chú"
+      REFUND:
+        is_header: true
+        sheet_title_name: "BÁO CÁO GIAO DỊCH REFUND CHÊNH LỆCH GIỮA MOMO VÀ BVBANK"
+        sheet_name: "REFUND"
+        is_format: true
+        column_mapping:
+          "No": "STT"
+          "TXN_TYPE": "Loại GD"
+          "TXN_DATE": "Ngày GD"
+          "ACCT_TYPE": "MS.Phân loại/STK TTD" 
+          "RRN": "MS.Mã HĐơn/ REF_BW" 
+          "TXN_ID": "MS.TransID/ TID"
+          "AMOUNT": "Số tiền"
+          "Ref_FC": "Ref_FC"
+          "Result_code": "Mã kết quả"
+          "Note": "Ghi chú"
+  DEFAULT:
+    file_extension: "xlsx"
+    separate: "|"
+    sftp_conn: "SFTP_ACQ_POS"
+    sftp_move: false
+    sheets:
+      DATA:
+        is_header: true
+        sheet_title_name: ""
+        sheet_name: "DATA"
+        is_format: false
+        column_mapping: {}

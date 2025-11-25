@@ -11,3 +11,10 @@ datasources:
     type: loki
     access: proxy
     url: http://loki:3100
+
+  - name: Jaeger
+    type: jaeger
+    access: proxy
+    url: http://jaeger:14268 # Trỏ đến Jaeger Collector HTTP Port (Port nội bộ)
+    version: 1
+    editable: true

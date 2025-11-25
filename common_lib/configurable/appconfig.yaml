@@ -1,0 +1,49 @@
+env: UAT
+
+UAT:
+  config_cycle_time: 5
+  config_sleep_time: 5
+  service_running: true
+  service_temporary_stop: false
+  is_email_summary: true
+  task_prc: bvbpks_schedule_api.pr_get_task
+  his_prc: bvbpks_schedule_api.schedule_history
+  import_log_prc: bvbpks_schedule_api.process_import_log
+  import_status_prc: bvbpks_schedule_api.update_import_status_log
+  orl_sys_tbl_col: user_tab_columns
+  orl_sys_tbl_tbl: all_tables
+  default_orl_db_conn: DW
+  default_sftp_conn: SFTP_DEFAULT
+  default_email_conn: EMAIL_DEFAULT
+  email_template: EMAIL_TEMPLATE
+  default_imp_key: FILE_IMPORT_DEFAULT
+  default_exp_key: FILE_EXPORT_DEFAULT
+  default_attchment_path: EMAIL_ATTACH_DEFAULT
+  default_archive_path: ARCHIVE_ATTACH
+  default_archive_sftp: ARCHIVE_SFTP
+  default_archive_imp: ARCHIVE_IMPORT
+  default_ext_module: externalTaskModule
+
+PROD:
+  config_cycle_time: 5
+  config_sleep_time: 5
+  service_running: true
+  service_temporary_stop: false
+  is_email_summary: true
+  task_prc: bvbpks_schedule_api.pr_get_task
+  his_prc: bvbpks_schedule_api.schedule_history
+  import_log_prc: bvbpks_schedule_api.process_import_log
+  import_status_prc: bvbpks_schedule_api.update_import_status_log
+  orl_sys_tbl_col: user_tab_columns
+  orl_sys_tbl_tbl: all_tables
+  default_orl_db_conn: DW
+  default_sftp_conn: SFTP_DEFAULT
+  default_email_conn: EMAIL_DEFAULT
+  email_template: EMAIL_TEMPLATE
+  default_imp_key: FILE_IMPORT_DEFAULT
+  default_exp_key: FILE_EXPORT_DEFAULT
+  default_attchment_path: EMAIL_ATTACH_DEFAULT
+  default_archive_path: ARCHIVE_ATTACH
+  default_archive_sftp: ARCHIVE_SFTP
+  default_archive_imp: ARCHIVE_IMPORT
+  default_ext_module: externalTaskModule

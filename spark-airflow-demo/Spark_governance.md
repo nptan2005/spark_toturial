@@ -1536,4 +1536,131 @@ http://googleusercontent.com/immersive_entry_chip/1
 1.  **Sửa `nginx.conf`**: Thay thế các IP cứng bằng tên dịch vụ (`postgres`, `oracle-db`).
 2.  **Hợp nhất Network**: Đã đổi tất cả các dịch vụ liên quan đến Airflow/Redis từ `airflow-network` sang **`spark-net`** để đơn giản hóa giao tiếp với Spark, Kafka, và MinIO.
 3.  **Tách Airflow**: Đã tách Airflow thành `airflow-webserver` và `airflow-scheduler` (và đổi tên dịch vụ Airflow cũ thành `airflow-webserver` và `airflow-scheduler`) để có một triển khai production-ready hơn.
+
+
+### 🖥️ Docker-Compose Graph
+
+1. 🐍 Giải pháp Khuyến nghị: Sử dụng Python Diagrams
+Bạn chỉ cần thực hiện hai bước chính:
+
+Cài đặt các công cụ cần thiết.
+
+Chạy một đoạn script Python để đọc file docker-compose.yml của bạn và vẽ sơ đồ.
+
+Bước 1: Cài đặt Dependencies
+
+Bạn cần cài đặt Graphviz (công cụ vẽ đồ thị) và các thư viện Python:
+
+1.1. Cài đặt Graphviz
+
+Graphviz là bắt buộc vì thư viện Diagrams dựa vào nó để sinh ra file hình ảnh.
+
+Trên Linux (Ubuntu/Debian):
+
+Bash
+sudo apt update
+sudo apt install graphviz
+Trên macOS (Homebrew):
+
+Bash
+brew install graphviz
+1.2. Cài đặt Thư viện Python
+
+Bạn cần thư viện Diagrams để vẽ và thư viện PyYAML để đọc cấu trúc file Compose.
+
+Bash
+pip install diagrams pyyaml
+Bước 2: Script Python Tự động Vẽ Sơ đồ
+
+Tạo một file có tên là draw_compose_graph.py trong cùng thư mục với docker-compose.yml và dán đoạn mã sau vào:
+
+Python
+import yaml
+from diagrams import Diagram, Node
+from diagrams.custom import Custom
+from collections import defaultdict
+
+# 1. Đọc cấu hình Docker Compose
+try:
+    with open('docker-compose.yml', 'r') as f:
+        config = yaml.safe_load(f)
+except FileNotFoundError:
+    print("Lỗi: Không tìm thấy file docker-compose.yml.")
+    exit()
+
+services = config.get('services', {})
+
+# 2. Định nghĩa các nhóm Service (Clusters) và tên file output
+output_filename = "cdp_architecture_diagram"
+
+# Định nghĩa các node và dependencies
+nodes = {}
+dependencies = defaultdict(list)
+service_groups = {
+    'spark': ['spark-master', 'spark-worker'],
+    'airflow': ['postgres', 'redis', 'airflow-init', 'airflow-webserver', 'airflow-scheduler', 'airflow-dag-processor', 'flower'],
+    'governance': ['ranger', 'ranger-usersync', 'ranger-tagsync', 'atlas'],
+    'messaging': ['zookeeper', 'kafka', 'kafka-client'],
+    'observability': ['prometheus', 'loki', 'promtail', 'grafana', 'cadvisor', 'jaeger', 'nginx-prometheus-exporter'],
+    'security': ['keycloak', 'spark-ui-proxy'],
+    'storage': ['minio', 'postgres-dwh'],
+    'proxy': ['access-host-proxy']
+}
+
+# 3. Ánh xạ Services vào Nodes
+for name, cfg in services.items():
+    # Sử dụng Node chung, nếu bạn muốn icon đẹp hơn, cần dùng thư viện diagrams phức tạp hơn
+    nodes[name] = Node(name=name)
+    
+    # Lấy dependencies
+    if 'depends_on' in cfg:
+        for dep in cfg['depends_on']:
+            if isinstance(cfg['depends_on'], dict):
+                # Xử lý format depends_on mới (dictionary)
+                dependencies[name].append(dep)
+            else:
+                # Xử lý format depends_on cũ (list)
+                dependencies[name].append(dep)
+
+# 4. Vẽ Sơ đồ
+with Diagram(
+    name="CDP - Full Stack Architecture", 
+    show=False, 
+    filename=output_filename, 
+    direction="LR" # Left to Right
+) as diag:
+    
+    # Tạo node cho từng service
+    for name, node in nodes.items():
+        # Không cần làm gì ở đây, nodes đã được tạo
+        pass
+
+    # Tạo kết nối giữa các nodes
+    for source, targets in dependencies.items():
+        source_node = nodes.get(source)
+        if source_node:
+            for target_name in targets:
+                target_node = nodes.get(target_name)
+                if target_node:
+                    source_node >> target_node
+    
+    # Bạn có thể thêm các kết nối đặc biệt hoặc không dùng depends_on ở đây (ví dụ: Spark -> Kafka)
+    nodes['spark-master'] >> nodes['kafka']
+    nodes['spark-worker'] >> nodes['kafka']
+    nodes['spark-master'] >> nodes['atlas']
+    nodes['airflow-webserver'] >> nodes['minio']
+    nodes['promtail'] >> nodes['loki']
+    nodes['prometheus'] >> nodes['grafana']
+    nodes['loki'] >> nodes['grafana']
+    nodes['jaeger'] >> nodes['grafana'] # Giả định bạn đã cấu hình data source
+
+print(f"\nĐã tạo sơ đồ kiến trúc thành công: {output_filename}.png")
+print("Sơ đồ chỉ dựa trên dependencies_on và các kết nối thêm vào. Vui lòng kiểm tra file hình ảnh.")
+Bước 3: Chạy Script
+
+Chạy script Python này trong terminal:
+
+Bash
+python draw_compose_graph.py
+Kết quả là một file cdp_architecture_diagram.png (hoặc SVG nếu bạn thay đổi định dạng) trong thư mục hiện tại, hiển thị các service và mối quan hệ phụ thuộc giữa chúng
 -------------END SETUP-------------

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+  <!-- Source: Atlas -->
+  <property>
+    <name>ranger.tagsync.source.impl.class</name>
+    <value>org.apache.ranger.tagsync.source.atlas.AtlasTagSource</value>
+  </property>
+
+  <property>
+    <name>ranger.tagsync.atlas.rest.endpoint</name>
+    <value>http://atlas:21000</value>
+  </property>
+
+  <!-- Nếu Atlas có auth thì thêm user/pass/kerberos sau -->
+  <property>
+    <name>ranger.tagsync.atlas.username</name>
+    <value>admin</value>
+  </property>
+
+  <property>
+    <name>ranger.tagsync.atlas.password</name>
+    <value>admin</value>
+  </property>
+
+  <!-- Destination: Ranger -->
+  <property>
+    <name>ranger.tagsync.dest.ranger.endpoint</name>
+    <value>http://ranger:6080</value>
+  </property>
+
+  <property>
+    <name>ranger.tagsync.ranger.username</name>
+    <value>admin</value>
+  </property>
+
+  <property>
+    <name>ranger.tagsync.ranger.password</name>
+    <value>rangerR0cks!</value>
+  </property>
+
+  <!-- Debug -->
+  <property>
+    <name>ranger.tagsync.atlas.debug.enabled</name>
+    <value>true</value>
+  </property>
+
+</configuration>

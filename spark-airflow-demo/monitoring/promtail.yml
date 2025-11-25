@@ -1,3 +1,4 @@
+# ./monitoring/promtail.yml (Đã tối ưu)
 server:
   http_listen_port: 9080
   grpc_listen_port: 0
@@ -13,145 +14,46 @@ clients:
   - url: http://loki:3100/loki/api/v1/push
 
 scrape_configs:
-  - job_name: docker-logs
-    static_configs:
-      - targets:
-          - localhost
-        labels:
-          job: docker
-          __path__: /logs/**/*.log
-  # ------------------------------
-  # NGINX LOGS
-  # ------------------------------
-  - job_name: nginx
-    static_configs:
-      - targets: ["localhost"]
-        labels:
-          job: nginx
-          component: proxy
-          __path__: /logs/nginx/*.log
-
-  # ------------------------------
-  # AIRFLOW LOGS
-  # ------------------------------
-  - job_name: airflow
-    static_configs:
-      - targets: ["localhost"]
-        labels:
-          job: airflow
-          component: airflow
-          __path__: /logs/airflow/**/*.log
-
-  # ------------------------------
-  # SPARK LOGS
-  # ------------------------------
-  - job_name: spark
-    static_configs:
-      - targets: ["localhost"]
-        labels:
-          job: spark
-          component: spark
-          __path__: /logs/spark/*.log
-
-  # ------------------------------
-  # KAFKA LOGS
-  # ------------------------------
-  - job_name: kafka
-    static_configs:
-      - targets: ["localhost"]
-        labels:
-          job: kafka
-          component: broker
-          __path__: /logs/kafka/*.log
-
-  # ------------------------------
-  # TOKEN SERVICE
-  # ------------------------------
-  - job_name: token_service
-    static_configs:
-      - targets: ["localhost"]
-        labels:
-          job: token_service
-          component: api
-          __path__: /logs/token-service/*.log
-
-  # ------------------------------
-  # JUPYTER LAB
-  # ------------------------------
-  - job_name: jupyter
-    static_configs:
-      - targets: ["localhost"]
-        labels:
-          job: jupyter
-          __path__: /logs/jupyter/*.log
-
-  # ------------------------------
-  # MINIO
-  # ------------------------------
-  - job_name: minio
-    static_configs:
-      - targets: ["localhost"]
-        labels:
-          job: minio
-          __path__: /logs/minio/*.log
-
-  # ------------------------------
-  # POSTGRES
-  # ------------------------------
-  - job_name: postgres
-    static_configs:
-      - targets: ["localhost"]
-        labels:
-          job: postgres
-          __path__: /logs/postgres/*.log
-
-  # ------------------------------
-  # REDIS
-  # ------------------------------
-  - job_name: redis
-    static_configs:
-      - targets: ["localhost"]
-        labels:
-          job: redis
-          __path__: /logs/redis/*.log
-
-  # ------------------------------
-  # ZOOKEEPER
-  # ------------------------------
-  - job_name: zookeeper
-    static_configs:
-      - targets: ["localhost"]
-        labels:
-          job: zookeeper
-          __path__: /logs/zookeeper/*.log
-
-  # ------------------------------
-  # RANGER
-  # ------------------------------
-  - job_name: ranger
-    static_configs:
-      - targets: ["localhost"]
-        labels:
-          job: ranger
-          __path__: /logs/ranger/*.log
-
-  # ------------------------------
-  # ATLAS
-  # ------------------------------
-  - job_name: atlas
-    static_configs:
-      - targets: ["localhost"]
-        labels:
-          job: atlas
-          __path__: /logs/atlas/*.log
-
-  # ------------------------------
   - job_name: containers
     docker_sd_configs:
       - host: unix:///var/run/docker.sock
         refresh_interval: 5s
+
+    # Cấu hình Nhãn (Labels) cho dữ liệu Log
     relabel_configs:
+      # Lấy tên Container (ví dụ: spark-master, airflow-webserver) làm nhãn 'container'
       - source_labels: ["__meta_docker_container_name"]
+        regex: "/(.*)"
         target_label: "container"
+        replacement: "$1"
+
+      # Lấy tên Service trong Compose (ví dụ: spark-master, airflow-webserver) làm nhãn 'service'
+      - source_labels:
+          ["__meta_docker_container_label_com_docker_compose_service"]
+        target_label: "service"
+
+      # Lấy ID của Docker Compose Project
+      - source_labels:
+          ["__meta_docker_container_label_com_docker_compose_project"]
+        target_label: "project"
+
+    # Cấu hình Xử lý Pipeline
     pipeline_stages:
-      - docker: {}
+      # Phân tích JSON log format (mặc định của Docker Log Driver)
+      - json:
+          expressions:
+            output: log
+            stream: stream
+            tag: attrs
+
+      # Thiết lập lại trường 'log' làm nội dung log (nếu cần)
+      - output:
+          source: log
+
+      # Thêm nhãn 'stream' (stdout/stderr)
+      - label:
+          stream:
+
+      # Thêm nhãn 'tag' (nếu cần)
+      - label:
+          tag:
