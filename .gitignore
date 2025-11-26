@@ -198,3 +198,5 @@ test/__pycache__/*
 common_lib/bin/data/*
 common_lib/bin/iv/*
 common_lib/bin/key/*
+
+.github/*
