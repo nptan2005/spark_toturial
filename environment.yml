@@ -1,0 +1,43 @@
+name: spark_env
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - numpy
+  - pandas
+  - pyarrow
+  - openjdk=11        # Java runtime trong Conda (không cần quyền admin)
+  - jupyterlab
+  - ipykernel
+  - requests
+  - tqdm
+  - setuptools
+  - wheel
+
+  - pip:
+      - pyspark==4.0.1        # nâng lên đúng bản bạn đang dùng
+      - findspark
+      - delta-spark
+      - kafka-python
+      - boto3
+      - google-cloud-storage
+      - azure-storage-blob
+      - sqlalchemy
+      - pyodbc
+      - oracledb
+      - pymysql
+      - paramiko
+      - pysftp
+      - requests-kerberos
+      - cryptography
+      - pyspnego
+      
+
+# --- thiết lập biến môi trường ---
+variables:
+  JAVA_HOME: C:\Users\tannp\Anaconda3\envs\spark_env
+  PYSPARK_PYTHON: C:\Users\tannp\Anaconda3\envs\spark_env\python.exe
+  PYSPARK_DRIVER_PYTHON: jupyter
+  PYSPARK_DRIVER_PYTHON_OPTS: "lab"
