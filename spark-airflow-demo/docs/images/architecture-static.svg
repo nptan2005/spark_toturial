@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1400" height="1050" viewBox="0 0 1400 1050" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .box { fill:#ffffff; stroke:#1e293b; stroke-width:1.6; rx:12; ry:12; }
+    .header { font:700 20px "Segoe UI", Arial, sans-serif; fill:#0f172a; }
+    .title { font:600 17px "Segoe UI", Arial, sans-serif; fill:#0f172a; }
+    .desc { font:400 13px "Segoe UI", Arial, sans-serif; fill:#475569; }
+    .arrow { stroke:#1e293b; stroke-width:1.6; marker-end:url(#arrowhead); }
+  </style>
+
+  <defs>
+    <marker id="arrowhead" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 z" fill="#1e293b"/>
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="50" y="55" class="header">Spark Platform Architecture</text>
+
+  <!-- Keycloak -->
+  <g transform="translate(450,90)">
+    <rect class="box" width="500" height="90"/>
+    <text x="20" y="33" class="title">Keycloak</text>
+    <text x="20" y="58" class="desc">Central Authentication • OIDC • SSO (8085)</text>
+  </g>
+
+  <!-- Spark Layer -->
+  <g transform="translate(50,210)">
+    <rect class="box" width="380" height="120"/>
+    <text x="20" y="38" class="title">Spark UI Proxy</text>
+    <text x="20" y="63" class="desc">OAuth2 Gateway • UI (8084)</text>
+  </g>
+
+  <g transform="translate(500,210)">
+    <rect class="box" width="380" height="120"/>
+    <text x="20" y="38" class="title">Spark Master</text>
+    <text x="20" y="63" class="desc">Master Service (7077) • UI (8080)</text>
+  </g>
+
+  <g transform="translate(950,210)">
+    <rect class="box" width="380" height="120"/>
+    <text x="20" y="38" class="title">Spark Workers</text>
+    <text x="20" y="63" class="desc">Executors • Worker UI (8081)</text>
+  </g>
+
+  <!-- Arrows from Keycloak -->
+  <line class="arrow" x1="700" y1="180" x2="240" y2="210"/>
+  <line class="arrow" x1="700" y1="180" x2="690" y2="210"/>
+  <line class="arrow" x1="700" y1="180" x2="1130" y2="210"/>
+
+  <!-- Jupyter / Airflow -->
+  <g transform="translate(50,380)">
+    <rect class="box" width="420" height="120"/>
+    <text x="20" y="38" class="title">JupyterLab</text>
+    <text x="20" y="63" class="desc">Interactive Analysis • PySpark • UI (8888)</text>
+  </g>
+
+  <g transform="translate(520,380)">
+    <rect class="box" width="420" height="120"/>
+    <text x="20" y="38" class="title">Airflow</text>
+    <text x="20" y="63" class="desc">DAG Scheduler • Web UI (8082)</text>
+  </g>
+
+  <line class="arrow" x1="470" y1="440" x2="520" y2="440"/>
+
+  <!-- MinIO / Postgres -->
+  <g transform="translate(50,550)">
+    <rect class="box" width="420" height="110"/>
+    <text x="20" y="38" class="title">MinIO</text>
+    <text x="20" y="63" class="desc">S3-Compatible Object Storage • API 9000 • Console 9001</text>
+  </g>
+
+  <g transform="translate(520,550)">
+    <rect class="box" width="420" height="110"/>
+    <text x="20" y="38" class="title">PostgreSQL</text>
+    <text x="20" y="63" class="desc">Metadata DB • 5432</text>
+  </g>
+
+  <!-- Arrows down from Jupyter & Airflow -->
+  <line class="arrow" x1="260" y1="500" x2="260" y2="550"/>
+  <line class="arrow" x1="730" y1="500" x2="730" y2="550"/>
+
+  <!-- Kafka -->
+  <g transform="translate(50,700)">
+    <rect class="box" width="890" height="110"/>
+    <text x="20" y="38" class="title">Kafka Cluster</text>
+    <text x="20" y="63" class="desc">Zookeeper (2181) • Brokers (9092 / 29092)</text>
+  </g>
+
+  <!-- Monitoring -->
+  <g transform="translate(970,700)">
+    <rect class="box" width="340" height="330"/>
+    <text x="20" y="40" class="title">Monitoring Stack</text>
+    <text x="20" y="70" class="desc">Prometheus (9090) — Metrics</text>
+    <text x="20" y="95" class="desc">Grafana (3000) — Dashboard</text>
+    <text x="20" y="120" class="desc">Loki (3100) — Logs</text>
+    <text x="20" y="145" class="desc">Promtail — Log Shipping</text>
+    <text x="20" y="170" class="desc">cAdvisor — Container Metrics</text>
+  </g>
+
+  <!-- Governance -->
+  <g transform="translate(50,850)">
+    <rect class="box" width="890" height="130"/>
+    <text x="20" y="38" class="title">Governance Layer</text>
+    <text x="20" y="63" class="desc">Apache Atlas (21000) • Apache Ranger (6080) • Token Service (5001)</text>
+  </g>
+
+</svg>

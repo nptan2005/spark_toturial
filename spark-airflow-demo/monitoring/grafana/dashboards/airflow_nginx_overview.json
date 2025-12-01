@@ -1,0 +1,49 @@
+{
+  "annotations": { "list": [] },
+  "panels": [
+    {
+      "title": "Nginx - total requests (rate)",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "rate(nginx_http_requests_total[1m])",
+          "legendFormat": "requests/s",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Nginx - active connections",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "nginx_connections_active",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "title": "Airflow - ERROR logs count (5m)",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "sum(rate({job=\"airflow\"} |= \"ERROR\"[5m])) by (job)",
+          "refId": "C",
+          "format": "time_series"
+        }
+      ]
+    },
+    {
+      "title": "Logs - Live (Loki)",
+      "type": "logs",
+      "targets": [
+        {
+          "expr": "{job=\"airflow\"} |= \"ERROR\"",
+          "refId": "D"
+        }
+      ]
+    }
+  ],
+  "title": "CDP - Nginx + Airflow Overview",
+  "schemaVersion": 27
+}

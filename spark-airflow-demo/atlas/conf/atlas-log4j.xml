@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
+<log4j:configuration debug="false"
+                     xmlns:log4j="http://jakarta.apache.org/log4j/">
+
+    <!--
+        ======================================================
+        Root Logger
+        ======================================================
+    -->
+    <appender name="ATLAS_APP" class="org.apache.log4j.RollingFileAppender">
+        <param name="File" value="/var/log/atlas/atlas.log" />
+        <param name="MaxFileSize" value="50MB" />
+        <param name="MaxBackupIndex" value="10" />
+        <param name="Append" value="true" />
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern"
+                   value="%d{ISO8601} [%t] %-5p %c - %m%n" />
+        </layout>
+    </appender>
+
+    <appender name="ATLAS_CONSOLE" class="org.apache.log4j.ConsoleAppender">
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern"
+                   value="%d{ISO8601} %-5p %c - %m%n" />
+        </layout>
+    </appender>
+
+    <!--
+        ======================================================
+        Kafka Notification Logs
+        ======================================================
+    -->
+    <logger name="org.apache.atlas.notification">
+        <level value="INFO"/>
+        <appender-ref ref="ATLAS_APP"/>
+    </logger>
+
+    <logger name="org.apache.atlas.kafka">
+        <level value="INFO"/>
+        <appender-ref ref="ATLAS_APP"/>
+    </logger>
+
+    <!--
+        ======================================================
+        Atlas Hooks (Spark, Hive, Storm)
+        ======================================================
+    -->
+    <logger name="org.apache.atlas.hook">
+        <level value="INFO"/>
+        <appender-ref ref="ATLAS_APP"/>
+    </logger>
+
+    <logger name="org.apache.atlas.spark">
+        <level value="DEBUG"/>
+        <appender-ref ref="ATLAS_APP"/>
+    </logger>
+
+    <!--
+        ======================================================
+        Graph DB + Solr Indexer
+        ======================================================
+    -->
+    <logger name="org.apache.atlas.repository.graphdb">
+        <level value="INFO"/>
+    </logger>
+
+    <logger name="org.apache.atlas.repository.impexp">
+        <level value="INFO"/>
+    </logger>
+
+    <logger name="org.apache.atlas.repository.graph">
+        <level value="INFO"/>
+        <appender-ref ref="ATLAS_APP"/>
+    </logger>
+
+    <logger name="org.apache.solr">
+        <level value="WARN"/>
+    </logger>
+
+    <!--
+        ======================================================
+        REST / API / UI / Security
+        ======================================================
+    -->
+    <logger name="org.apache.atlas.web">
+        <level value="INFO"/>
+        <appender-ref ref="ATLAS_APP"/>
+    </logger>
+
+    <logger name="org.apache.atlas.authentication">
+        <level value="WARN"/>
+    </logger>
+
+    <!--
+        ======================================================
+        Root Logger
+        ======================================================
+    -->
+    <root>
+        <priority value="INFO"/>
+        <appender-ref ref="ATLAS_CONSOLE"/>
+        <appender-ref ref="ATLAS_APP"/>
+    </root>
+
+</log4j:configuration>

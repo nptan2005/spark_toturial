@@ -1,0 +1,25 @@
+name: spark_gonvernance_env
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.12
+  - jupyterlab
+  - pyspark=3.3.0
+  - pandas
+  - numpy
+  - matplotlib
+  - airflow=2.10.5
+  - psycopg2
+  - requests
+  - kafka-python
+  - openjdk=11        # Java runtime trong Conda (không cần quyền admin)
+  - ipykernel
+  - setuptools
+  - wheel
+# --- thiết lập biến môi trường ---
+variables:  
+  JAVA_HOME: C:\Users\tannp\Anaconda3\envs\spark_env
+  PYSPARK_PYTHON: C:\Users\tannp\Anaconda3\envs\spark_env\python.exe
+  PYSPARK_DRIVER_PYTHON: jupyter
+  PYSPARK_DRIVER_PYTHON_OPTS: "lab"

@@ -1,0 +1,24 @@
+# Dùng Gradle + JDK 17
+FROM gradle:8.7-jdk17 AS builder
+
+# Thư mục làm việc
+WORKDIR /home/gradle
+
+# Copy toàn bộ source OpenLineage (đã clone sẵn trên máy bạn)
+# Giả sử Dockerfile nằm cùng cấp với thư mục OpenLineage
+COPY openlineage_jar/OpenLineage /home/gradle/OpenLineage
+
+# Vào module integration/spark
+WORKDIR /home/gradle/OpenLineage/integration/spark
+
+# Build toàn bộ integration/spark (trong đó có spark35)
+# --no-daemon: tránh chạy daemon lâu; -x test: bỏ chạy unit tests cho nhanh
+RUN gradle clean build -x test --no-daemon
+
+# Copy JAR runtime của spark35 ra 1 chỗ cố định
+# Thông thường JAR sẽ nằm trong spark35/build/libs/
+RUN find spark35/build/libs -type f -name "*.jar" ! -name "*-sources.jar" ! -name "*-javadoc.jar" \
+    -exec cp {} /home/gradle/openlineage-spark35.jar \; -quit
+
+# Chỉ để debug khi chạy docker run trực tiếp image này
+CMD ["bash", "-c", "echo 'DONE'; ls -lh /home/gradle/openlineage-spark35.jar"]

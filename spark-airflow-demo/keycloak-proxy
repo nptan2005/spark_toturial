@@ -1,0 +1,18 @@
+spark-ui-proxy:
+  image: quay.io/oauth2-proxy/oauth2-proxy:latest
+  container_name: spark-ui-proxy
+  environment:
+    - OAUTH2_PROXY_CLIENT_ID=spark-ui
+    - OAUTH2_PROXY_CLIENT_SECRET=demo-secret
+    - OAUTH2_PROXY_COOKIE_SECRET=randomsecret123
+    - OAUTH2_PROXY_PROVIDER=keycloak
+    - OAUTH2_PROXY_OIDC_ISSUER_URL=http://keycloak:8080/realms/spark-demo-realm
+    - OAUTH2_PROXY_REDIRECT_URL=http://localhost:8084/oauth2/callback
+    - OAUTH2_PROXY_UPSTREAMS=http://spark-master:8080
+  ports:
+    - "8084:4180"
+  depends_on:
+    - keycloak
+    - spark-master
+  networks:
+    - spark-net

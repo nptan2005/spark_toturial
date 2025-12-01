@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1600" height="1200" viewBox="0 0 1600 1200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Spark Platform Architecture — Cloud Theme">
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 z" fill="#0f172a"/>
+    </marker>
+    <filter id="soft-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#000" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+
+  <style>
+    .box { fill:#ffffff; stroke:#1f2937; stroke-width:1.6; rx:14; ry:14; }
+    .title { font:700 22px/1.1 "Segoe UI", Arial, sans-serif; fill:#0f172a; }
+    .label { font:600 16px "Segoe UI", Arial, sans-serif; fill:#0f172a; }
+    .desc { font:400 14px "Segoe UI", Arial, sans-serif; fill:#475569; }
+    .small { font:400 12px "Segoe UI", Arial, sans-serif; fill:#64748b; }
+    .icon-caption { font:600 13px "Segoe UI", Arial, sans-serif; fill:#0f172a; }
+    .spark { fill:#ff8a1f; }
+    .kafka { fill:#6b21a8; }
+    .storage { fill:#0ea5e9; }
+    .monitor { fill:#16a34a; }
+    .arrowline { stroke:#0f172a; stroke-width:1.6; marker-end:url(#arrow); }
+  </style>
+
+  <!-- Header -->
+  <text x="28" y="48" class="title">Spark Platform Architecture — Cloud Theme</text>
+  <text x="28" y="76" class="small">Spark • Kafka • Airflow • Jupyter • MinIO • Postgres • Governance • Monitoring</text>
+
+  <!-- Top: Keycloak -->
+  <g transform="translate(520,110)" filter="url(#soft-shadow)">
+    <rect class="box" width="560" height="92"/>
+    <g transform="translate(18,16)">
+      <circle cx="34" cy="30" r="24" fill="#0b84ff"/>
+      <path d="M26 30 q8 -14 16 0" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <rect x="30" y="34" width="8" height="4" rx="2" fill="#fff"/>
+    </g>
+    <text x="80" y="44" class="label">Keycloak</text>
+    <text x="80" y="66" class="desc">Central Auth • OIDC • SSO — 8085</text>
+  </g>
+
+  <!-- Spark layer -->
+  <g transform="translate(60,230)">
+    <!-- Spark UI Proxy -->
+    <g transform="translate(0,0)" filter="url(#soft-shadow)">
+      <rect class="box" width="380" height="140"/>
+      <g transform="translate(20,22)">
+        <circle cx="28" cy="28" r="26" class="spark"/>
+        <path d="M20 34 q8 -18 16 0" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/>
+      </g>
+      <text x="80" y="48" class="label">Spark UI Proxy</text>
+      <text x="80" y="72" class="desc">OAuth2 Gateway • UI 8084</text>
+      <text x="20" y="116" class="small">Proxies user sessions to Spark UI and enforces auth.</text>
+    </g>
+
+    <!-- Spark Master -->
+    <g transform="translate(460,0)" filter="url(#soft-shadow)">
+      <rect class="box" width="380" height="140"/>
+      <g transform="translate(20,22)">
+        <rect x="6" y="6" width="44" height="44" rx="8" fill="#fff" stroke="#ff8a1f" stroke-width="3"/>
+        <text x="36" y="40" text-anchor="middle" class="icon-caption" fill="#ff8a1f">M</text>
+      </g>
+      <text x="80" y="48" class="label">Spark Master</text>
+      <text x="80" y="72" class="desc">Cluster manager — Master 7077 • UI 8080</text>
+      <text x="20" y="116" class="small">Schedules jobs, manages resources and executors.</text>
+    </g>
+
+    <!-- Spark Workers -->
+    <g transform="translate(920,0)" filter="url(#soft-shadow)">
+      <rect class="box" width="380" height="140"/>
+      <g transform="translate(20,22)">
+        <rect x="6" y="6" width="44" height="44" rx="8" fill="#eef2ff" stroke="#6366f1" stroke-width="3"/>
+        <text x="36" y="40" text-anchor="middle" class="icon-caption" fill="#6366f1">W</text>
+      </g>
+      <text x="80" y="48" class="label">Spark Workers</text>
+      <text x="80" y="72" class="desc">Executors • Worker UI 8081</text>
+      <text x="20" y="116" class="small">Run tasks, store shuffle, and execute jobs.</text>
+    </g>
+  </g>
+
+  <!-- Arrows from Keycloak to Spark layer -->
+  <line class="arrowline" x1="800" y1="200" x2="240" y2="260" />
+  <line class="arrowline" x1="800" y1="200" x2="700" y2="260" />
+  <line class="arrowline" x1="800" y1="200" x2="1140" y2="260" />
+
+  <!-- Jupyter & Airflow -->
+  <g transform="translate(60,420)">
+    <g transform="translate(0,0)" filter="url(#soft-shadow)">
+      <rect class="box" width="460" height="140"/>
+      <g transform="translate(20,24)">
+        <rect x="4" y="4" width="44" height="44" rx="6" fill="#f1f5f9" stroke="#0ea5e9" stroke-width="3"/>
+        <text x="36" y="40" text-anchor="middle" class="icon-caption" fill="#0ea5e9">J</text>
+      </g>
+      <text x="84" y="56" class="label">JupyterLab</text>
+      <text x="84" y="82" class="desc">Interactive notebooks • Submit PySpark • 8888</text>
+    </g>
+
+    <g transform="translate(520,0)" filter="url(#soft-shadow)">
+      <rect class="box" width="460" height="140"/>
+      <g transform="translate(20,24)">
+        <rect x="4" y="4" width="44" height="44" rx="6" fill="#fff7ed" stroke="#fb923c" stroke-width="3"/>
+        <text x="36" y="40" text-anchor="middle" class="icon-caption" fill="#fb923c">A</text>
+      </g>
+      <text x="84" y="56" class="label">Airflow</text>
+      <text x="84" y="82" class="desc">DAG orchestration • Scheduler • Web 8082</text>
+    </g>
+
+    <line class="arrowline" x1="500" y1="490" x2="520" y2="490" />
+  </g>
+
+  <!-- Storage & DB -->
+  <g transform="translate(60,600)">
+    <g transform="translate(0,0)" filter="url(#soft-shadow)">
+      <rect class="box" width="460" height="120"/>
+      <g transform="translate(20,20)">
+        <rect x="6" y="6" width="44" height="44" rx="6" fill="#ecfeff" stroke="#06b6d4" stroke-width="3"/>
+        <text x="36" y="40" text-anchor="middle" class="icon-caption" fill="#06b6d4">S</text>
+      </g>
+      <text x="84" y="50" class="label">MinIO (Object Storage)</text>
+      <text x="84" y="78" class="desc">S3-compatible • API 9000 • Console 9001</text>
+    </g>
+
+    <g transform="translate(520,0)" filter="url(#soft-shadow)">
+      <rect class="box" width="460" height="120"/>
+      <g transform="translate(20,20)">
+        <rect x="6" y="6" width="44" height="44" rx="6" fill="#fff7f0" stroke="#0ea5e9" stroke-width="3"/>
+        <text x="36" y="40" text-anchor="middle" class="icon-caption" fill="#0ea5e9">DB</text>
+      </g>
+      <text x="84" y="50" class="label">PostgreSQL</text>
+      <text x="84" y="78" class="desc">Metadata DB • 5432</text>
+    </g>
+
+    <line class="arrowline" x1="260" y1="520" x2="260" y2="600" />
+    <line class="arrowline" x1="1030" y1="520" x2="1030" y2="600" />
+  </g>
+
+  <!-- Kafka -->
+  <g transform="translate(60,760)" filter="url(#soft-shadow)">
+    <rect class="box" width="980" height="120"/>
+    <g transform="translate(18,24)">
+      <rect x="0" y="0" width="68" height="68" rx="10" fill="#ede9fe" stroke="#6b21a8" stroke-width="2"/>
+      <text x="34" y="44" text-anchor="middle" class="icon-caption" fill="#6b21a8">K</text>
+    </g>
+    <text x="100" y="56" class="label">Kafka Cluster</text>
+    <text x="100" y="82" class="desc">Zookeeper (2181) • Brokers (9092 / 29092)</text>
+  </g>
+
+  <!-- Schema Registry, Connect, Redis, ES (optional icons added) -->
+  <g transform="translate(1050,760)">
+    <g transform="translate(0,0)" filter="url(#soft-shadow)">
+      <rect class="box" width="460" height="120"/>
+      <text x="18" y="36" class="label">Ecosystem / Connectors</text>
+      <text x="18" y="64" class="desc">Schema Registry • Kafka Connect • Redis • Elasticsearch</text>
+      <g transform="translate(18,78)">
+        <rect x="0" y="0" width="44" height="44" rx="6" fill="#fff7ed" stroke="#fb923c" stroke-width="2"/>
+        <text x="22" y="30" text-anchor="middle" class="icon-caption" fill="#fb923c">SR</text>
+        <rect x="64" y="0" width="44" height="44" rx="6" fill="#f0f9ff" stroke="#0ea5e9" stroke-width="2"/>
+        <text x="86" y="30" text-anchor="middle" class="icon-caption" fill="#0ea5e9">C</text>
+        <rect x="128" y="0" width="44" height="44" rx="6" fill="#fef3f2" stroke="#ef4444" stroke-width="2"/>
+        <text x="150" y="30" text-anchor="middle" class="icon-caption" fill="#ef4444">R</text>
+        <rect x="192" y="0" width="44" height="44" rx="6" fill="#f1f5f9" stroke="#0f172a" stroke-width="2"/>
+        <text x="214" y="30" text-anchor="middle" class="icon-caption" fill="#0f172a">ES</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- Governance -->
+  <g transform="translate(60,900)" filter="url(#soft-shadow)">
+    <rect class="box" width="980" height="120"/>
+    <text x="20" y="56" class="label">Governance Layer</text>
+    <text x="20" y="82" class="desc">Apache Atlas (21000) • Apache Ranger (6080) • Token Service (5001)</text>
+  </g>
+
+  <!-- Monitoring panel -->
+  <g transform="translate(1080,900)" filter="url(#soft-shadow)">
+    <rect class="box" width="460" height="200"/>
+    <g transform="translate(22,28)">
+      <rect x="0" y="0" width="58" height="58" rx="10" fill="#ecfdf5" stroke="#16a34a" stroke-width="2"/>
+      <text x="29" y="40" text-anchor="middle" class="icon-caption" fill="#16a34a">P</text>
+    </g>
+    <text x="100" y="56" class="label">Monitoring Stack</text>
+    <text x="100" y="86" class="desc">Prometheus (9090) • Grafana (3000) • Loki (3100)</text>
+    <text x="100" y="112" class="small">Promtail • cAdvisor • Alertmanager</text>
+  </g>
+
+  <!-- Footer legend -->
+  <g transform="translate(30,1160)">
+    <text x="0" y="0" class="small">Legend:</text>
+    <rect x="90" y="-16" width="22" height="22" rx="5" fill="#ff8a1f"/>
+    <text x="120" y="0" class="small">Spark</text>
+    <rect x="220" y="-16" width="22" height="22" rx="5" fill="#6b21a8"/>
+    <text x="250" y="0" class="small">Kafka</text>
+    <rect x="350" y="-16" width="22" height="22" rx="5" fill="#0ea5e9"/>
+    <text x="380" y="0" class="small">Storage / DB</text>
+    <rect x="520" y="-16" width="22" height="22" rx="5" fill="#16a34a"/>
+    <text x="550" y="0" class="small">Monitoring</text>
+  </g>
+
+</svg>
